@@ -35,7 +35,8 @@ app_server = Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
 app.layout = html.Div([
                        html.H1("Economics Phd Placement Data", style = {"text-align": "center"}),
-                       html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
+                       #html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
+                       html.Div("Either the organization or the category must be set to something other than All for this to work"),
                        dcc.Dropdown(id = "select_inst",
                                     options = listfoo,
                                     value = 0,
@@ -87,7 +88,8 @@ app.layout = html.Div([
                                            Input("slidey", "value")])
 def mapinator(q, x, y, z):
     global inst_data
-
+    if (int(q) == 0) & (int(x) == 0):
+        q = 67
     iterated_data = inst_data.loc[((inst_data["startdate"].dt.year == int(z)) | ((inst_data["startdate"].dt.year > int(z)*int(z)))) &\
                                   ((inst_data["from_oid"] == int(q)) | ((inst_data["from_oid"] > int(q)*int(q)*int(q)))) &\
                                   ((inst_data["category_id"] == int(x)) | ((inst_data["category_id"] > int(x)*400))) &\
