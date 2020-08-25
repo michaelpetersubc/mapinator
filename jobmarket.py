@@ -27,20 +27,21 @@ listextendfoo = [{"label": i, "value": j} for i, j in sorted(set(zip(inst_data.f
 fooextender = listfoo.extend(listextendfoo)
 
 vals = []
-for yr in range(2008,date.today().year):
+for yr in range(2008,date.today().year + 1):
     vals.append({"label": yr, "value":yr})
 
 app_server = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
 app.layout = html.Div([
-                       html.H1("Economics Phd Placement Data", style = {"text-align": "center"}),
+                       html.H1("Economics Ph.D. Placement Data", style = {"text-align": "center"}),
                        #html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
                        html.Div("Either the From Institution or the Primary Fields must be set to something other than All for this to work"),
                        dcc.Dropdown(id = "select_inst",
                                     options = listfoo,
                                     value = 67,
-#                                    multi = True
+#                                    multi = True,
+                                    placeholder = "Select institution where they graduated from"
                                     ),
                        dcc.Dropdown(id = "select_stuff",
                                     options = [{"label": "Primary Specializations - All", "value": 0}, 
@@ -54,7 +55,8 @@ app.layout = html.Div([
                                                {"label": "Theory", "value": 15},
                                                {"label": "Behavioral Economics", "value": 16},
                                                {"label": "Political Economics", "value": 23}],
-                                    value = 0
+                                    value = 0,
+                                    placeholder = "Select primary specialization"
                                     ),
                        dcc.Dropdown(id = "select_sector",
                                     options = [{"label": "Recruiter Types - All", "value": "0"},
@@ -70,11 +72,13 @@ app.layout = html.Div([
                                                {"label": "Human Resources department of educational or non-profit institution", "value": "10"},
                                                {"label": "Human Resources department of for-profit organization", "value": "11"},
                                                {"label": "Personal", "value": "12"}],
-                                    value = "0"
+                                    value = "0",
+                                    placeholder = "Select a type of recruiter"
                                     ),
                        dcc.Dropdown(id = "slidey", 
                                     options = vals,
-                                    value = 2019
+                                    value = 2019,
+                                    placeholder = "Select year of placement"
                                  ),
                        html.Br(),
                        dcc.Graph(id = "my_map", figure = {}),
@@ -88,8 +92,8 @@ app.layout = html.Div([
                                            Input("slidey", "value")])
 def mapinator(q, x, y, z):
     global inst_data
-    if (int(q) == 0) & (int(x) == 0):
-        q = 67
+#     if (int(q) == 0) & (int(x) == 0):
+#         q = 67
     iterated_data = inst_data.loc[((inst_data["startdate"].dt.year == int(z)) | ((inst_data["startdate"].dt.year > int(z)*int(z)))) &\
                                   ((inst_data["from_oid"] == int(q)) | ((inst_data["from_oid"] > int(q)*int(q)*int(q)))) &\
                                   ((inst_data["category_id"] == int(x)) | ((inst_data["category_id"] > int(x)*400))) &\
@@ -102,16 +106,16 @@ def mapinator(q, x, y, z):
 #        if row.longitude <= row.to_longitude:
 #               colors = "red"
 #        else: colors = "blue"
-        colors = "blue"
+        colors = "navy"
         fig.add_trace(go.Scattergeo(lon = [row.longitude, row.to_longitude], lat = [row.latitude, row.to_latitude], mode = "lines", line = dict(width = 1, color = colors)))
-        fig.add_trace(go.Scattergeo(lon = [row.to_longitude], lat = [row.to_latitude], hoverinfo = "text", text = [row.to_name + ' ' + str(row.to_rank)], mode = "markers", marker = dict(size = 0.1, color = "rgb(128, 0, 128)", line = dict(width = 3, color = "rgba(68, 68, 68, 0)"))))
-        fig.add_trace(go.Scattergeo(lon = [row.longitude], lat = [row.latitude], hoverinfo = "text", text = [row.from_institution_name + ' ' + str(row.rank)], mode = "markers", marker = dict(size = 0.1, color = "rgb(128, 0, 128)", line = dict(width = 3, color = "rgba(68, 68, 68, 0)"))))
-        cloud_data.append(dict({'aid':row.aid,'from_institution_name':row.from_institution_name,'rank':row.rank,'to_name':row.to_name,'to_rank':row.to_rank}))
+        fig.add_trace(go.Scattergeo(lon = [row.to_longitude], lat = [row.to_latitude], hoverinfo = "text", text = [row.to_name + '; Rank: ' + str(row.to_rank)], mode = "markers", marker = dict(size = 2.5, color = "navy", line = dict(width = 3, color = "darkgoldenrod"))))
+        fig.add_trace(go.Scattergeo(lon = [row.longitude], lat = [row.latitude], hoverinfo = "text", text = [row.from_institution_name + '; Rank: ' + str(row.rank)], mode = "markers", marker = dict(size = 2.5, color = "navy", line = dict(width = 3, color = "darkgoldenrod"))))
+        cloud_data.append(dict({'from_institution_name':row.from_institution_name,'rank':row.rank,'to_name':row.to_name,'to_rank':row.to_rank})) #'aid':row.aid
 
-    fig.update_layout(showlegend = False, geo = dict(projection_type = "equirectangular", showland = True, landcolor = "rgb(243, 243, 243)", countrycolor = "rgb(204, 204, 204)", showcountries = True, showlakes = True, showcoastlines = True)) #title_text = "category_id_" + str(x) + ": " + data_subsets[x].name.unique()[0], 
+    fig.update_layout(showlegend = False, geo = dict(projection_type = "equirectangular", showland = True, landcolor = "whitesmoke", countrycolor = "silver", showcountries = True, showlakes = True, showcoastlines = True, coastlinecolor = "darkgrey", lakecolor = "white", oceancolor = "white")) #title_text = "category_id_" + str(x) + ": " + data_subsets[x].name.unique()[0], 
 
 
-    cloud_columns = [{"name":"aid","id":"aid"},{"name":"graduated-from","id":"from_institution_name"},{"name":"gradschool-rank","id":"rank"},{"name":"hired-by","id":"to_name"},{"name":"hired-by-rank","id":"to_rank"}]
+    cloud_columns = [{"name":"graduated-from","id":"from_institution_name"},{"name":"gradschool-rank","id":"rank"},{"name":"hired-by","id":"to_name"},{"name":"hired-by-rank","id":"to_rank"}] #{"name":"aid","id":"aid"},
     return fig, cloud_data, cloud_columns
     
 
