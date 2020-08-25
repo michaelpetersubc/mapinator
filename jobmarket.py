@@ -36,10 +36,10 @@ app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
 app.layout = html.Div([
                        html.H1("Economics Phd Placement Data", style = {"text-align": "center"}),
                        #html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
-                       html.Div("Either the organization or the category must be set to something other than All for this to work"),
+                       html.Div("Either the From Institution or the Primary Fields must be set to something other than All for this to work"),
                        dcc.Dropdown(id = "select_inst",
                                     options = listfoo,
-                                    value = 0,
+                                    value = 67,
 #                                    multi = True
                                     ),
                        dcc.Dropdown(id = "select_stuff",
@@ -99,9 +99,10 @@ def mapinator(q, x, y, z):
     cloud_data = []
     fig.update_layout(height=800)
     for row in iterated_data.itertuples():
-        if row.longitude <= row.to_longitude:
-               colors = "red"
-        else: colors = "blue"
+#        if row.longitude <= row.to_longitude:
+#               colors = "red"
+#        else: colors = "blue"
+        colors = "blue"
         fig.add_trace(go.Scattergeo(lon = [row.longitude, row.to_longitude], lat = [row.latitude, row.to_latitude], mode = "lines", line = dict(width = 1, color = colors)))
         fig.add_trace(go.Scattergeo(lon = [row.to_longitude], lat = [row.to_latitude], hoverinfo = "text", text = [row.to_name + ' ' + str(row.to_rank)], mode = "markers", marker = dict(size = 0.1, color = "rgb(128, 0, 128)", line = dict(width = 3, color = "rgba(68, 68, 68, 0)"))))
         fig.add_trace(go.Scattergeo(lon = [row.longitude], lat = [row.latitude], hoverinfo = "text", text = [row.from_institution_name + ' ' + str(row.rank)], mode = "markers", marker = dict(size = 0.1, color = "rgb(128, 0, 128)", line = dict(width = 3, color = "rgba(68, 68, 68, 0)"))))
