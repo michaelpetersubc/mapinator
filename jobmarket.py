@@ -36,11 +36,11 @@ app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
 app.layout = html.Div([
                        html.H1("Economics Ph.D. Placement Data", style = {"text-align": "center"}),
                        #html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
-                       html.Div("Either the From Institution or the Primary Fields must be set to something other than All for this to work"),
+                       #html.Div("Either the From Institution or the Primary Fields must be set to something other than All for this to work"),
                        dcc.Dropdown(id = "select_inst",
                                     options = listfoo,
                                     value = 67,
-#                                    multi = True,
+                                    multi = True,
                                     placeholder = "Select institution where they graduated from"
                                     ),
                        dcc.Dropdown(id = "select_stuff",
@@ -94,11 +94,18 @@ def mapinator(q, x, y, z):
     global inst_data
 #     if (int(q) == 0) & (int(x) == 0):
 #         q = 67
+
+    if type(q) is int:
+        q = [q]
+    elif type(q) is list:
+        q = q
+
     iterated_data = inst_data.loc[((inst_data["startdate"].dt.year == int(z)) | ((inst_data["startdate"].dt.year > int(z)*int(z)))) &\
-                                  ((inst_data["from_oid"] == int(q)) | ((inst_data["from_oid"] > int(q)*int(q)*int(q)))) &\
+                                  ((inst_data["from_oid"].isin(q)) | ((inst_data["from_oid"] > max(q)*max(q)*max(q)))) &\
                                   ((inst_data["category_id"] == int(x)) | ((inst_data["category_id"] > int(x)*400))) &\
                                   ((inst_data["recruiter_type"] == int(y)) | ((inst_data["recruiter_type"] > int(y)*40)))]
-
+#pairing "all" with specific institutions gives specific institutions
+                                   
     fig = go.Figure()
     cloud_data = []
     fig.update_layout(height=800)
