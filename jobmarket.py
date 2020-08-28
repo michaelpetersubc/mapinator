@@ -34,17 +34,21 @@ for yr in range(2008,date.today().year + 1):
 app_server = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
-app.layout = html.Div([
-                       html.H1("Economics Ph.D. Placement Data", style = {"text-align": "center"}),
+app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style = {"text-align": "center"}),
+                       html.Div([html.H6("Author: Amedeus D'Souza, Vancouver School of Economics", style = {"float": "left", "margin":"auto"}),
+                       html.Div(html.A(html.Button("Learn More"), href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'), style={"float": "right", "margin": "auto"})]),
+                       html.Br(),
+                       html.Br(),
+                       html.Br(),
                        #html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
                        #html.Div("Either the From Institution or the Primary Fields must be set to something other than All for this to work"),
-                       dcc.Dropdown(id = "select_inst",
+                       html.Div([html.Div(["Institutions Where Applicants Graduated From", dcc.Dropdown(id = "select_inst",
                                     options = listfoo,
                                     value = 67, #UBC
                                     multi = True,
-                                    placeholder = "Select institution where they graduated from"
-                                    ),
-                       dcc.Dropdown(id = "select_stuff",
+                                    placeholder = "Select institutions where applicants graduated from"
+                                    )], style = {"width": "25%", "float": "left", "margin": "auto"}),
+                       html.Div(["Primary Specialization", dcc.Dropdown(id = "select_stuff",
                                     options = [{"label": "Primary Specializations - All", "value": "0"}, 
                                                {"label": "Development; Growth", "value": "1"},
                                                {"label": "Econometrics", "value": "2"},
@@ -58,8 +62,8 @@ app.layout = html.Div([
                                                {"label": "Political Economics", "value": "23"}],
                                     value = "0",
                                     placeholder = "Select primary specialization"
-                                    ),
-                       dcc.Dropdown(id = "select_sector",
+                                    )], style = {"width": "25%", "float": "left", "margin": "auto"}),
+                       html.Div(["Position Type", dcc.Dropdown(id = "select_sector",
                                     options = [{"label": "Position Type - All", "value": "0"}, 
                                                {"label": "Assistant Professor", "value": "1"},
                                                {"label": "Associate Professor", "value": "2"},
@@ -76,7 +80,7 @@ app.layout = html.Div([
                                                {"label": "Visiting Professor/Lecturer/Instructor", "value": "15"}],
                                     value = "0",
                                     placeholder = "Select position type"
-                                    ),    
+                                    )], style = {"width": "25%", "float": "left", "margin": "auto"}),    
 #                        dcc.Dropdown(id = "select_sector",
 #                                     options = [{"label": "Recruiter Types - All", "value": "0"},
 #                                                {"label": "Academic organization (economics department)", "value": "1"},
@@ -94,11 +98,10 @@ app.layout = html.Div([
 #                                     value = "0",
 #                                     placeholder = "Select a type of recruiter"
 #                                     ),
-                       dcc.Dropdown(id = "slidey", 
+                       html.Div(["Placement Year", dcc.Dropdown(id = "slidey", 
                                     options = vals,
                                     value = 2019,
-                                    placeholder = "Select year of placement"
-                                 ),
+                                    placeholder = "Select year of placement")], style = {"width": "25%", "float": "left", "margin": "auto"})], className = "row"),
                        html.Br(),
                        dcc.Graph(id = "my_map", figure = {}),
                        dash_table.DataTable(id = "my_cloud")
