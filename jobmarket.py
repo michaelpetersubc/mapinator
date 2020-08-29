@@ -21,6 +21,10 @@ db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where
 inst_data = pd.DataFrame(db_cursor.fetchall())
 
 inst_data["startdate"] = pd.to_datetime(inst_data["startdate"]) #convert object to datetime
+
+inst_data["rank"] = inst_data["rank"].fillna(" ")
+inst_data["to_rank"] = inst_data["to_rank"].fillna(" ")
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}]
 listextendfoo = [{"label": i, "value": j} for i, j in sorted(set(zip(inst_data.from_shortname, inst_data.from_oid)))] #inst_data.from_institution_name
@@ -137,8 +141,8 @@ def mapinator(q, x, y, z):
 #        else: colors = "blue"
         colors = "navy"
         fig.add_trace(go.Scattergeo(lon = [row.longitude, row.to_longitude], lat = [row.latitude, row.to_latitude], mode = "lines", line = dict(width = 1, color = colors)))
-        fig.add_trace(go.Scattergeo(lon = [row.to_longitude], lat = [row.to_latitude], hoverinfo = "text", text = [row.to_shortname + '; Rank: ' + str(row.to_rank)], mode = "markers", marker = dict(size = 2.5, color = "navy", line = dict(width = 3, color = "darkgoldenrod")))) #row.to_name
-        fig.add_trace(go.Scattergeo(lon = [row.longitude], lat = [row.latitude], hoverinfo = "text", text = [row.from_shortname + '; Rank: ' + str(row.rank)], mode = "markers", marker = dict(size = 2.5, color = "navy", line = dict(width = 3, color = "darkgoldenrod")))) #row.from_institution_name
+        fig.add_trace(go.Scattergeo(lon = [row.to_longitude], lat = [row.to_latitude], hoverinfo = "text", text = [row.to_shortname + '; Rank: ' + str(row.to_rank).split(".")[0]], mode = "markers", marker = dict(size = 2.5, color = "navy", line = dict(width = 3, color = "darkgoldenrod")))) #row.to_name
+        fig.add_trace(go.Scattergeo(lon = [row.longitude], lat = [row.latitude], hoverinfo = "text", text = [row.from_shortname + '; Rank: ' + str(row.rank).split(".")[0]], mode = "markers", marker = dict(size = 2.5, color = "navy", line = dict(width = 3, color = "darkgoldenrod")))) #row.from_institution_name
         cloud_data.append(dict({'from_shortname':row.from_shortname,'rank':row.rank,'to_shortname':row.to_shortname,'to_rank':row.to_rank, 'position_name': row.position_name})) #'aid':row.aid #'from_institution_name':row.from_institution_name
 
     fig.update_layout(showlegend = False, geo = dict(projection_type = "equirectangular", showland = True, landcolor = "whitesmoke", countrycolor = "silver", showcountries = True, showlakes = True, showcoastlines = True, coastlinecolor = "darkgrey", lakecolor = "white", oceancolor = "white")) #title_text = "category_id_" + str(x) + ": " + data_subsets[x].name.unique()[0], 
