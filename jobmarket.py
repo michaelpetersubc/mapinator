@@ -11,8 +11,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
+from dotenv import load_dotenv
 
-db_connection = sql.connect(host='127.0.0.1', database='econjobmarket_research', user='amedeus', password='amedeus')
+foousername = os.environ.get("foousername")
+foopassword = os.environ.get("foopassword")
+
+db_connection = sql.connect(host='127.0.0.1', database='econjobmarket_research', user= foousername, password= foopassword)
 
 db_cursor = db_connection.cursor(dictionary=True)
 
