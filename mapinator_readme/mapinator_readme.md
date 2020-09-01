@@ -37,11 +37,9 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 from dotenv import load_dotenv
+load_dotenv()
 
-foousername = os.environ.get("foousername")
-foopassword = os.environ.get("foopassword")
-
-db_connection = sql.connect(host='127.0.0.1', database='econjobmarket_research', user= foousername, password= foopassword)
+db_connection = sql.connect(host='127.0.0.1', database= os.environ.get("foodatabase"), user= os.environ.get("foousername"), password= os.environ.get("foopassword"))
 
 db_cursor = db_connection.cursor(dictionary=True)
 
