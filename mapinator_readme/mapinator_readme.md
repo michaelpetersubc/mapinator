@@ -23,6 +23,9 @@ The limitations of the data include:
 - The population of graduates from institutions outside the United States, Canada, and Western Europe are underrepresented in the sample.
 - Recruiter types are self reported by the institutions.
 - There may be ambiguity in the assignment of positions. In particular, "Lecturers" at certain institutions - in particular European institutions - are indeed "Assistant Professors". Similarly, there are instances of ambiguity between "Post-Docs" and Visiting Assistant Professors, the latter of which are classified as "Visiting Professor/Lecturer/Instructor". Instructors and Assisant Professors of Teaching are classified as "Visiting Professor/Lecturer/Instructor", "Lecturer", or "Assistant Professor".
+- Rankings are currently only assigned to a single department in an institution.
+- Applicants whose department of academic placement is ambiguous has been assigned by default to the Economics department of said institution.
+- For private institutions with multiple branches, the assignment of horizontal position representation does not necessarily accurately reflect branch of placement.
 
 ## Coverage
 
