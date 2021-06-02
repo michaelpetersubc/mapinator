@@ -26,6 +26,7 @@ The limitations of the data include:
 - Rankings are currently only assigned to a single department in an institution.
 - Applicants whose department of academic placement is ambiguous has been assigned by default to the Economics department of said institution.
 - For private institutions with multiple branches, the assignment of horizontal position representation does not necessarily accurately reflect branch of placement.
+- Some applicants may have graduated from an institution where they were awarded an undergraduate or Master's degree rather than a Ph.D. While the vast majority of placements are of Ph.D. graduates, there may be some which are not, and these rare exceptions are not explicitly indicated in the sample at this time.
 
 ## Coverage
 
