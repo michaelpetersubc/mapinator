@@ -60,6 +60,11 @@ vals = []
 for yr in range(2008, date.today().year + 1):
     vals.append({"label": yr, "value": yr})
 
+cloud_columns = [{"name": "graduated-from", "id": "from_shortname"}, {"name": "gradschool-rank", "id": "rank"},
+                {"name": "hired-by", "id": "to_shortname"}, {"name": "hired-by-rank", "id": "to_rank"},
+                {"name": "position-type", "id": "position_name"},
+                {'name': 'gender', 'id': 'gender'}]
+
 app_server = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -69,7 +74,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                  html.Div(html.A(html.Button("Learn More"),
                                                  href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'),
                                           style={"float": "right", "margin": "auto"})]),
-                       html.Br(), html.Br(),
+                       html.Br(),
+                       html.Br(),
                        html.H2(('Cumulative Count since ', workathondate.strftime('%x'),' : ', total), style= {'text-align': 'center', 'color':count_colour}),
                        html.Br(),
                        html.Br(),
@@ -79,8 +85,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        html.Div(
                            [html.Div(["Applicant Institution", dcc.Dropdown(id="select_inst",
                                                                             options=listfoo,
-                                                                            value=67,
-                                                                            # UBC
+                                                                            value=67, #UBC
                                                                             multi=True,
                                                                             placeholder="Select institutions where applicants graduated from"
                                                                             )],
@@ -170,12 +175,14 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        html.Br(),
                        dcc.Graph(id="my_map", figure = {}),
-                       dash_table.DataTable(id="my_cloud")
+                       dash_table.DataTable(id="my_cloud", page_size = 10, style_table={'height': '350px', 'overflowY': 'auto'}, columns = cloud_columns),
+                       html.Br(),
+                       html.Img(src = 'https://www.artefactual.com/wp-content/uploads/2018/10/ubc-logo-2018-narrowsig-blue-rgb300.jpg', alt = 'here', style={'width':'20%', 'textAlign':'right'})
                        ])
 
 
 # ,
-@app.callback([Output("my_map", "figure"), Output("my_cloud", "data"), Output("my_cloud", "columns")],
+@app.callback([Output("my_map", "figure"), Output("my_cloud", "data")],
               [Input("select_inst", "value"),
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
@@ -235,11 +242,7 @@ def mapinator(q, x, y, z, r):
                                coastlinecolor="darkgrey", lakecolor="white",
                                oceancolor="white"))  # title_text = "category_id_" + str(x) + ": " + data_subsets[x].name.unique()[0],
 
-    cloud_columns = [{"name": "graduated-from", "id": "from_shortname"}, {"name": "gradschool-rank", "id": "rank"},
-                     {"name": "hired-by", "id": "to_shortname"}, {"name": "hired-by-rank", "id": "to_rank"},
-                     {"name": "position-type", "id": "position_name"},
-                     {'name': 'gender', 'id': 'gender'}]  # {"name":"aid","id":"aid"},
-    return fig, cloud_data, cloud_columns
+    return fig, cloud_data
 
 
 server = app.server
