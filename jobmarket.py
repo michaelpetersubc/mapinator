@@ -13,8 +13,9 @@ import dash_table
 from dash.dependencies import Input, Output
 from dotenv import load_dotenv
 import datetime
+import numpy as np
 
-#Change to True if using SQL connector
+# Change to True if using SQL connector
 use_sql = False
 
 global inst_data
@@ -34,8 +35,8 @@ else:
     p = p + '\\' + json_name
     inst_data = pd.read_json(p)
 
-workathondate = datetime.datetime(2021,1,1)
-total = len(inst_data[inst_data['created_at'] > workathondate])
+workathondate = datetime.datetime(2021, 7, 2)
+total = len(inst_data[inst_data['created_at'] >= workathondate])
 count_colour = 'navy'
 
 inst_data["startdate"] = pd.to_datetime(inst_data["startdate"])  # convert object to datetime
@@ -56,14 +57,9 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 #  either via MySQL or Python conditional on server; same for to
 fooextender = listfoo.extend(listextendfoo)
 
-vals = []
+vals = [{'label': 'All Years', 'value': '-1'}]
 for yr in range(2008, date.today().year + 1):
     vals.append({"label": yr, "value": yr})
-
-cloud_columns = [{"name": "graduated-from", "id": "from_shortname"}, {"name": "gradschool-rank", "id": "rank"},
-                {"name": "hired-by", "id": "to_shortname"}, {"name": "hired-by-rank", "id": "to_rank"},
-                {"name": "position-type", "id": "position_name"},
-                {'name': 'gender', 'id': 'gender'}]
 
 app_server = Flask(__name__)
 
@@ -76,7 +72,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                           style={"float": "right", "margin": "auto"})]),
                        html.Br(),
                        html.Br(),
-                       html.H2(('Cumulative Count since ', workathondate.strftime('%x'),' : ', total), style= {'text-align': 'center', 'color':count_colour}),
+                       html.H2(('Cumulative Count since ', workathondate.strftime('%x'), ' : ', total),
+                               style={'text-align': 'center', 'color': count_colour}),
                        html.Br(),
                        html.Br(),
                        html.Br(),
@@ -85,7 +82,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        html.Div(
                            [html.Div(["Applicant Institution", dcc.Dropdown(id="select_inst",
                                                                             options=listfoo,
-                                                                            value=67, #UBC
+                                                                            value=67,  # UBC
                                                                             multi=True,
                                                                             placeholder="Select institutions where applicants graduated from"
                                                                             )],
@@ -165,20 +162,31 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                      value=date.today().year,
                                                                      placeholder="Select year of placement")],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
-                            html.Div(["Placement of Women Only", dcc.Dropdown(id="female",
-                                                                             options=[
-                                                                                 {"label": "False", "value": "0"},
-                                                                                 {"label": "True", "value": "1"}],
-                                                                             value="0",
-                                                                             placeholder="Select True for female only placements"
-                                                                             )],
+                            html.Div(["Female Placement Only", dcc.Dropdown(id="female",
+                                                                            options=[
+                                                                                {"label": "False", "value": "0"},
+                                                                                {"label": "True", "value": "1"}],
+                                                                            value="0",
+                                                                            placeholder="Select True for female only placements"
+                                                                            )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        html.Br(),
-                       dcc.Graph(id="my_map", figure = {}),
-                       dash_table.DataTable(id="my_cloud", page_size = 10, style_table={'height': '350px', 'overflowY': 'auto'}, columns = cloud_columns),
+                       dcc.Graph(id="my_map", figure={}),
+                       dash_table.DataTable(id="my_cloud", page_size=10,
+                                            style_table={'height': '350px', 'overflowY': 'auto'},
+                                            columns=[{"name": "graduated-from", "id": "from_shortname"},
+                                                     {"name": "gradschool-rank", "id": "rank"},
+                                                     {"name": "hired-by", "id": "to_shortname"},
+                                                     {"name": "hired-by-rank", "id": "to_rank"},
+                                                     {"name": "position-type", "id": "position_name"},
+                                                     {'name': 'gender', 'id': 'gender'}]),
                        html.Br(),
-                       html.Img(src = 'https://www.artefactual.com/wp-content/uploads/2018/10/ubc-logo-2018-narrowsig-blue-rgb300.jpg', alt = 'here', style={'width':'20%', 'textAlign':'right'})
+                       # placeholder for putting donor logos
+                       html.Img(
+                           src='https://raw.githubusercontent.com/VoliCrank/pics/main/ubc_logo.jpg',
+                           alt='picture broken...', style={'width': '20%', 'textAlign': 'right'})
                        ])
+
 
 # ,
 @app.callback([Output("my_map", "figure"), Output("my_cloud", "data")],
@@ -187,65 +195,90 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                Input("select_sector", "value"),
                Input("slidey", "value"),
                Input('female', 'value')])
-def mapinator(q, x, y, z, r):
-    #     if (int(q) == 0) & (int(x) == 0):
-    #         q = 67
+def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
-    if type(q) is int:
-        q = [q]
-    elif type(q) is list:
-        q = q
+    # customize display options
+    workathon = True
+    line_colour = 'navy'
+    to_colour = 'green'
+    from_colour = 'darkgoldenrod'
+
+    if type(inst_val) is int:
+        inst_val = [inst_val]
 
     iterated_data = inst_data.loc[
-        ((inst_data["startdate"].dt.year == int(z)) | (inst_data["startdate"].dt.year > int(z) * int(z))) & \
-        ((inst_data["from_oid"].isin(q)) | (inst_data["from_oid"] > max(q) * max(q) * max(q))) & \
-        ((inst_data["category_id"] == int(x)) | (inst_data["category_id"] > int(x) * 400)) & \
-        ((inst_data["postype"] == int(y)) | (inst_data["postype"] > int(y) * 40))]
-    if int(r) != 0:
+        ((inst_data["from_oid"].isin(inst_val)) | (inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
+        ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
+        ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40))]
+
+    if  not -1 == int(year_val):
+        iterated_data = iterated_data[iterated_data['startdate'].dt.year == int(year_val)]
+    if int(female_val) != 0:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
-    # pairing "all" with specific institutions gives specific institutions
 
+    #create initial empty figure
     fig = go.Figure(go.Scattergeo())
-    cloud_data = []
     fig.update_layout(height=800)
-    for row in iterated_data.itertuples():
-        line_colour = 'navy'
-        if row.created_at >  workathondate:
-            line_colour = 'green'
-        to_colour = 'darkgoldenrod'
-        from_colour = 'darkgoldenrod'
-        fig.add_trace(
-            go.Scattergeo(lon=[row.longitude, row.to_longitude], lat=[row.latitude, row.to_latitude], mode="lines",
-                          line=dict(width=1, color=line_colour)))
-        # row.to_name
-        fig.add_trace(go.Scattergeo(lon=[row.to_longitude], lat=[row.to_latitude], hoverinfo="text",
-                                    text=[row.to_shortname + '<br>' + row.to_rank.split(".")[0]], mode="markers",
-                                    marker=dict(size=2.5, color = to_colour,
-                                                line=dict(width=3, color=to_colour))))
-        # row.from_institution_name
-        fig.add_trace(go.Scattergeo(lon=[row.longitude], lat=[row.latitude], hoverinfo="text",
-                                    text=[row.from_shortname + '<br>' + row.rank.split(".")[0]], mode="markers",
-                                    marker=dict(size=2.5, symbol = 'circle',color = from_colour,
-                                                line=dict(width=3, color=from_colour))))
 
-        cloud_data.append(dict({'from_shortname': row.from_shortname,
-                                'rank': row.rank.split(".")[0].split(" ")[1],
-                                'to_shortname': row.to_shortname,
-                                'to_rank': row.to_rank.split(".")[0].split(" ")[1],
-                                'position_name': row.position_name,
-                                'gender': row.gender}))  # 'aid':row.aid #'from_institution_name':row.from_institution_name
+    # set up vectorized loading
+    (lons, lats) = prep_data(iterated_data)
+    # load lines
+    fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines', showlegend = False,
+                                line=dict(width=1, color=line_colour)))
 
-    fig.update_layout(showlegend=False,
+    if workathon:
+        work_data = iterated_data[iterated_data['created_at'] >= workathondate]
+        (lons, lats) = prep_data(work_data)
+        fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines',
+                                    line=dict(width=1, color='red')))
+
+    # format university display names on the dots
+    iterated_data['from_uni'] = iterated_data['from_shortname'] + '<br>' + iterated_data['rank']
+    iterated_data['to_uni'] = iterated_data['to_shortname'] + '<br>' + iterated_data['to_rank']
+
+    # add to_uni dots
+    fig.add_trace(go.Scattergeo(lon=iterated_data['to_longitude'], lat=iterated_data['to_latitude'],
+                                hoverinfo="text", text=iterated_data['to_uni'], mode="markers", name = 'hired by',
+                                marker=dict(size=2.5, color=to_colour,
+                                            line=dict(width=3, color=to_colour))))
+
+    # add from_uni dots
+    fig.add_trace(go.Scattergeo(lon=iterated_data['longitude'], lat=iterated_data['latitude'], hoverinfo="text",
+                                text=iterated_data['from_uni'], mode="markers", name = 'graduated from',
+                                marker=dict(size=2.5, symbol='circle', color=from_colour,
+                                            line=dict(width=3, color=from_colour))))
+
+    fig.update_layout(showlegend=True,
                       geo=dict(projection_type="equirectangular", showland=True, landcolor="whitesmoke",
                                countrycolor="silver", showcountries=True, showlakes=True, showcoastlines=True,
                                coastlinecolor="darkgrey", lakecolor="white",
-                               oceancolor="white"))  # title_text = "category_id_" + str(x) + ": " + data_subsets[x].name.unique()[0],
+                               oceancolor="white"))
 
-    return fig, cloud_data
+    # format data for table
+    f = lambda row: row.split('.')[0].split(" ")[1]
+    iterated_data['rank'] = iterated_data['rank'].apply(f)
+    iterated_data['to_rank'] = iterated_data['to_rank'].apply(f)
+    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender']
+    iterated_data['meta'] = iterated_data[columns].to_dict(orient='records')
+    table_data = iterated_data['meta'].to_list()
+
+    return fig, table_data
+
+
+# magic vectorization stuff from the internet
+def prep_data(df):
+    lons = np.empty(3 * len(df))
+    lons[::3] = df['longitude']
+    lons[1::3] = df['to_longitude']
+    lons[2::3] = None
+    lats = np.empty(3 * len(df))
+    lats[::3] = df['latitude']
+    lats[1::3] = df['to_latitude']
+    lats[2::3] = None
+    return (lons, lats)
 
 
 server = app.server
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-
