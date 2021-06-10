@@ -34,6 +34,10 @@ else:
     p = p + '\\' + json_name
     inst_data = pd.read_json(p)
 
+workathondate = datetime.datetime(2021,1,1)
+total = len(inst_data[inst_data['created_at'] > workathondate])
+count_colour = 'navy'
+
 inst_data["startdate"] = pd.to_datetime(inst_data["startdate"])  # convert object to datetime
 
 inst_data["rank"][inst_data["rank"].notnull()] = "Rank: " + inst_data["rank"][inst_data["rank"].notnull()].astype(str)
@@ -65,6 +69,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                  html.Div(html.A(html.Button("Learn More"),
                                                  href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'),
                                           style={"float": "right", "margin": "auto"})]),
+                       html.Br(), html.Br(),
+                       html.H2(('Cumulative Count since ', workathondate.strftime('%x'),' : ', total), style= {'text-align': 'center', 'color':count_colour}),
                        html.Br(),
                        html.Br(),
                        html.Br(),
@@ -154,7 +160,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                      value=date.today().year,
                                                                      placeholder="Select year of placement")],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
-                            html.Div(["Female Placements Only", dcc.Dropdown(id="female",
+                            html.Div(["Placement of Women Only", dcc.Dropdown(id="female",
                                                                              options=[
                                                                                  {"label": "False", "value": "0"},
                                                                                  {"label": "True", "value": "1"}],
@@ -163,7 +169,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                              )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        html.Br(),
-                       dcc.Graph(id="my_map", figure={}),
+                       dcc.Graph(id="my_map", figure = {}),
                        dash_table.DataTable(id="my_cloud")
                        ])
 
@@ -198,7 +204,7 @@ def mapinator(q, x, y, z, r):
     fig.update_layout(height=800)
     for row in iterated_data.itertuples():
         line_colour = 'navy'
-        if row.created_at >  datetime.datetime(2021,1,1):
+        if row.created_at >  workathondate:
             line_colour = 'red'
         to_colour = 'darkgoldenrod'
         from_colour = 'darkgoldenrod'
