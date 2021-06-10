@@ -180,7 +180,6 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        html.Img(src = 'https://www.artefactual.com/wp-content/uploads/2018/10/ubc-logo-2018-narrowsig-blue-rgb300.jpg', alt = 'here', style={'width':'20%', 'textAlign':'right'})
                        ])
 
-
 # ,
 @app.callback([Output("my_map", "figure"), Output("my_cloud", "data")],
               [Input("select_inst", "value"),
