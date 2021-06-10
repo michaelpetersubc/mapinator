@@ -211,7 +211,7 @@ def mapinator(q, x, y, z, r):
     for row in iterated_data.itertuples():
         line_colour = 'navy'
         if row.created_at >  workathondate:
-            line_colour = 'red'
+            line_colour = 'green'
         to_colour = 'darkgoldenrod'
         from_colour = 'darkgoldenrod'
         fig.add_trace(
