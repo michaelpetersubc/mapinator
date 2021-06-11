@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 import datetime
 
 #Change to True if using SQL connector
-use_sql = False
+use_sql = True
 
 global inst_data
 
