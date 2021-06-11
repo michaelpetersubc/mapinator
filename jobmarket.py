@@ -16,7 +16,7 @@ import datetime
 import numpy as np
 
 # Change to True if using SQL connector
-use_sql = True
+use_sql = False
 
 global inst_data
 
@@ -80,10 +80,9 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                           style={"float": "right", "margin": "auto"})]),
                        html.Br(),
                        html.Br(),
-                       html.H2(('Cumulative Count since ', workathondate.strftime('%x'), ' : ',
+                       html.H2(('Cumulative Count Since ', workathondate.strftime('%x'), ' : ',
                                 len(inst_data[inst_data['created_at'] >= workathondate])),
                                style={'text-align': 'center', 'color': count_colour}),
-                       html.Br(),
                        html.Br(),
                        html.Br(),
                        # html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
@@ -180,31 +179,42 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                             )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        html.Br(),
+                       html.Br(),
                        dcc.Graph(id="my_map", figure={}),
-                       dash_table.DataTable(id="my_cloud", page_size=10,
-                                            style_table={'height': '350px', 'overflowY': 'auto'},
-                                            columns=[{"name": "graduated-from", "id": "from_shortname"},
-                                                     {"name": "gradschool-rank", "id": "rank"},
-                                                     {"name": "hired-by", "id": "to_shortname"},
-                                                     {"name": "hired-by-rank", "id": "to_rank"},
-                                                     {"name": "position-type", "id": "position_name"},
-                                                     {'name': 'gender', 'id': 'gender'}]),
+                       dcc.Tabs(
+                           [dcc.Tab(label='Placement Details',
+                                    children=[dash_table.DataTable(id="my_cloud", page_size=10,
+                                                                   style_table={'height': '350px', 'overflowY': 'auto'},
+                                                                   columns=[{"name": "graduated-from",
+                                                                             "id": "from_shortname"},
+                                                                            {"name": "gradschool-rank", "id": "rank"},
+                                                                            {"name": "hired-by", "id": "to_shortname"},
+                                                                            {"name": "hired-by-rank", "id": "to_rank"},
+                                                                            {"name": "position-type",
+                                                                             "id": "position_name"},
+                                                                            {'name': 'gender', 'id': 'gender'}])]),
+                            dcc.Tab(label='Leaderboard for Workathon',
+                                    children=[dash_table.DataTable(id='ranks', page_size=10,
+                                                                   columns=[{'name': 'rank', 'id': 'rank'},
+                                                                            {'name': 'creator id', 'id': 'created_by'}],
+                                                                   style_table={'height': '350px',
+                                                                                'overflowY': 'auto'})])]),
                        html.Br(),
                        # placeholder for putting donor logos
                        html.Img(
                            src='https://raw.githubusercontent.com/VoliCrank/pics/main/ubc_logo.jpg',
-                           alt='picture broken...', style={'width': '20%', 'textAlign': 'right'})
+                           alt='picture broken...', style={'width': '20%'})
                        ])
 
 
 # ,
-@app.callback([Output("my_map", "figure"), Output("my_cloud", "data")],
+@app.callback([Output("my_map", "figure"), Output("my_cloud", "data"), Output('ranks', 'data')],
               [Input("select_inst", "value"),
+
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
                Input("slidey", "value"),
                Input('female', 'value')])
-
 def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     # customize display options
     workathon = True
@@ -217,7 +227,7 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
     iterated_data = inst_data.loc[
         ((inst_data["from_oid"].isin(inst_val)) | (
-                    inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
+                inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
         ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40))]
 
@@ -244,7 +254,6 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
     # format university display names on the dots
 
-
     # add to_uni dots
     fig.add_trace(go.Scattergeo(lon=iterated_data['to_longitude'], lat=iterated_data['to_latitude'],
                                 hoverinfo="text", text=iterated_data['to_uni'], mode="markers", name='hired by',
@@ -267,7 +276,7 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
     table_data = iterated_data['meta'].to_list()
 
-    return fig, table_data
+    return fig, table_data, make_rankings(inst_data)
 
 
 # magic vectorization stuff from the internet
@@ -281,6 +290,19 @@ def prep_data(df):
     lats[1::3] = df['to_latitude']
     lats[2::3] = None
     return (lons, lats)
+
+
+def make_rankings(inst_data):
+    rankings = {1: '\U0001F3C6', 2: '\U0001F947', 3: '\U0001F948', 4: '\U0001F949'}
+    work_data = inst_data[inst_data['created_at'] >= workathondate]
+    k = work_data['created_by'].value_counts().index
+    for i in range(len(k) - 4):
+        rankings[i + 5] = i + 5
+    data = []
+    for i in range(len(k)):
+        rank = rankings[i + 1]
+        data.append({'created_by': k[i], 'rank': rank})
+    return data
 
 
 server = app.server
