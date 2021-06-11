@@ -51,10 +51,12 @@ inst_data["to_rank"] = inst_data["to_rank"].fillna(" ")
 f = lambda row: row.split('.')[0].split(" ")[1]
 inst_data['rank'] = inst_data['rank'].apply(f)
 inst_data['to_rank'] = inst_data['to_rank'].apply(f)
-columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender']
+inst_data['year'] = inst_data['startdate'].dt.year
+columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender', 'year']
 inst_data['meta'] = inst_data[columns].to_dict(orient='records')
 inst_data['from_uni'] = inst_data['from_shortname'] + '<br>' + inst_data['rank']
 inst_data['to_uni'] = inst_data['to_shortname'] + '<br>' + inst_data['to_rank']
+inst_data = inst_data.sort_values(by = ['year'], ascending = False)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}]
@@ -66,7 +68,8 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 fooextender = listfoo.extend(listextendfoo)
 
 vals = [{'label': 'All Years', 'value': '-1'}]
-for yr in range(2008, date.today().year + 1):
+end = inst_data['year'].max()
+for yr in range(2008, end + 1):
     vals.append({"label": yr, "value": yr})
 
 app_server = Flask(__name__)
@@ -192,7 +195,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                             {"name": "hired-by-rank", "id": "to_rank"},
                                                                             {"name": "position-type",
                                                                              "id": "position_name"},
-                                                                            {'name': 'gender', 'id': 'gender'}])]),
+                                                                            {'name': 'gender', 'id': 'gender'},
+                                                                            {'name': 'placement year', 'id': 'year'}])]),
                             dcc.Tab(label='Leaderboard for Workathon',
                                     children=[dash_table.DataTable(id='ranks', page_size=10,
                                                                    columns=[{'name': 'rank', 'id': 'rank'},
