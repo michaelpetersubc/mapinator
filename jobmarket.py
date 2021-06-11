@@ -16,7 +16,7 @@ import datetime
 import numpy as np
 
 # Change to True if using SQL connector
-use_sql = False
+use_sql = True
 
 global inst_data
 
@@ -36,7 +36,6 @@ else:
     inst_data = pd.read_json(p)
 
 workathondate = datetime.datetime(2021, 7, 2)
-total = len(inst_data[inst_data['created_at'] >= workathondate])
 count_colour = 'navy'
 
 inst_data["startdate"] = pd.to_datetime(inst_data["startdate"])  # convert object to datetime
@@ -47,6 +46,15 @@ inst_data["to_rank"][inst_data["to_rank"].notnull()] = "Rank: " + inst_data["to_
 
 inst_data["rank"] = inst_data["rank"].fillna(" ")
 inst_data["to_rank"] = inst_data["to_rank"].fillna(" ")
+
+# preprocess data to reduce load time
+f = lambda row: row.split('.')[0].split(" ")[1]
+inst_data['rank'] = inst_data['rank'].apply(f)
+inst_data['to_rank'] = inst_data['to_rank'].apply(f)
+columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender']
+inst_data['meta'] = inst_data[columns].to_dict(orient='records')
+inst_data['from_uni'] = inst_data['from_shortname'] + '<br>' + inst_data['rank']
+inst_data['to_uni'] = inst_data['to_shortname'] + '<br>' + inst_data['to_rank']
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}]
@@ -72,7 +80,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                           style={"float": "right", "margin": "auto"})]),
                        html.Br(),
                        html.Br(),
-                       html.H2(('Cumulative Count since ', workathondate.strftime('%x'), ' : ', total),
+                       html.H2(('Cumulative Count since ', workathondate.strftime('%x'), ' : ',
+                                len(inst_data[inst_data['created_at'] >= workathondate])),
                                style={'text-align': 'center', 'color': count_colour}),
                        html.Br(),
                        html.Br(),
@@ -195,8 +204,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                Input("select_sector", "value"),
                Input("slidey", "value"),
                Input('female', 'value')])
-def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
+def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     # customize display options
     workathon = True
     line_colour = 'navy'
@@ -207,23 +216,24 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
         inst_val = [inst_val]
 
     iterated_data = inst_data.loc[
-        ((inst_data["from_oid"].isin(inst_val)) | (inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
+        ((inst_data["from_oid"].isin(inst_val)) | (
+                    inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
         ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40))]
 
-    if  not -1 == int(year_val):
+    if not -1 == int(year_val):
         iterated_data = iterated_data[iterated_data['startdate'].dt.year == int(year_val)]
     if int(female_val) != 0:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
 
-    #create initial empty figure
+    # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
 
     # set up vectorized loading
     (lons, lats) = prep_data(iterated_data)
     # load lines
-    fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines', showlegend = False,
+    fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines', showlegend=False,
                                 line=dict(width=1, color=line_colour)))
 
     if workathon:
@@ -233,18 +243,17 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
                                     line=dict(width=1, color='red')))
 
     # format university display names on the dots
-    iterated_data['from_uni'] = iterated_data['from_shortname'] + '<br>' + iterated_data['rank']
-    iterated_data['to_uni'] = iterated_data['to_shortname'] + '<br>' + iterated_data['to_rank']
+
 
     # add to_uni dots
     fig.add_trace(go.Scattergeo(lon=iterated_data['to_longitude'], lat=iterated_data['to_latitude'],
-                                hoverinfo="text", text=iterated_data['to_uni'], mode="markers", name = 'hired by',
+                                hoverinfo="text", text=iterated_data['to_uni'], mode="markers", name='hired by',
                                 marker=dict(size=2.5, color=to_colour,
                                             line=dict(width=3, color=to_colour))))
 
     # add from_uni dots
     fig.add_trace(go.Scattergeo(lon=iterated_data['longitude'], lat=iterated_data['latitude'], hoverinfo="text",
-                                text=iterated_data['from_uni'], mode="markers", name = 'graduated from',
+                                text=iterated_data['from_uni'], mode="markers", name='graduated from',
                                 marker=dict(size=2.5, symbol='circle', color=from_colour,
                                             line=dict(width=3, color=from_colour))))
 
@@ -255,11 +264,7 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
                                oceancolor="white"))
 
     # format data for table
-    f = lambda row: row.split('.')[0].split(" ")[1]
-    iterated_data['rank'] = iterated_data['rank'].apply(f)
-    iterated_data['to_rank'] = iterated_data['to_rank'].apply(f)
-    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender']
-    iterated_data['meta'] = iterated_data[columns].to_dict(orient='records')
+
     table_data = iterated_data['meta'].to_list()
 
     return fig, table_data
