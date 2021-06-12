@@ -14,10 +14,9 @@ from dash.dependencies import Input, Output
 from dotenv import load_dotenv
 import datetime
 import numpy as np
-import math
 
 # Change to True if using SQL connector
-use_sql = False
+use_sql = True
 
 global inst_data
 
