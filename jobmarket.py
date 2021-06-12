@@ -14,9 +14,10 @@ from dash.dependencies import Input, Output
 from dotenv import load_dotenv
 import datetime
 import numpy as np
+import math
 
 # Change to True if using SQL connector
-use_sql = True
+use_sql = False
 
 global inst_data
 
@@ -35,28 +36,32 @@ else:
     p = p + '\\' + json_name
     inst_data = pd.read_json(p)
 
+
+def preprocess(df):
+    df["startdate"] = pd.to_datetime(df["startdate"])  # convert object to datetime
+    df["rank"][df["rank"].notnull()] = "Rank: " + df["rank"][df["rank"].notnull()].astype(
+        str)
+    df["to_rank"][df["to_rank"].notnull()] = "Rank: " + df["to_rank"][
+        df["to_rank"].notnull()].astype(str)
+
+    df["rank"] = df["rank"].fillna(" ")
+    df["to_rank"] = df["to_rank"].fillna(" ")
+
+    f = lambda row: row.split('.')[0].split(" ")[1]
+    df['rank'] = df['rank'].apply(f)
+    df['to_rank'] = df['to_rank'].apply(f)
+    df['year'] = df['startdate'].dt.year
+    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender', 'year']
+    df['meta'] = df[columns].to_dict(orient='records')
+    df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
+    df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
+    df = df.sort_values(by=['year'], ascending=False)
+    return df
+
+
 workathondate = datetime.datetime(2021, 7, 2)
 count_colour = 'navy'
-
-inst_data["startdate"] = pd.to_datetime(inst_data["startdate"])  # convert object to datetime
-
-inst_data["rank"][inst_data["rank"].notnull()] = "Rank: " + inst_data["rank"][inst_data["rank"].notnull()].astype(str)
-inst_data["to_rank"][inst_data["to_rank"].notnull()] = "Rank: " + inst_data["to_rank"][
-    inst_data["to_rank"].notnull()].astype(str)
-
-inst_data["rank"] = inst_data["rank"].fillna(" ")
-inst_data["to_rank"] = inst_data["to_rank"].fillna(" ")
-
-# preprocess data to reduce load time
-f = lambda row: row.split('.')[0].split(" ")[1]
-inst_data['rank'] = inst_data['rank'].apply(f)
-inst_data['to_rank'] = inst_data['to_rank'].apply(f)
-inst_data['year'] = inst_data['startdate'].dt.year
-columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender', 'year']
-inst_data['meta'] = inst_data[columns].to_dict(orient='records')
-inst_data['from_uni'] = inst_data['from_shortname'] + '<br>' + inst_data['rank']
-inst_data['to_uni'] = inst_data['to_shortname'] + '<br>' + inst_data['to_rank']
-inst_data = inst_data.sort_values(by = ['year'], ascending = False)
+inst_data = preprocess(inst_data)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}]
@@ -68,8 +73,7 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 fooextender = listfoo.extend(listextendfoo)
 
 vals = [{'label': 'All Years', 'value': '-1'}]
-end = inst_data['year'].max()
-for yr in range(2008, end + 1):
+for yr in range(2008, inst_data['year'].max() + 1):
     vals.append({"label": yr, "value": yr})
 
 app_server = Flask(__name__)
@@ -196,7 +200,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                             {"name": "position-type",
                                                                              "id": "position_name"},
                                                                             {'name': 'gender', 'id': 'gender'},
-                                                                            {'name': 'placement year', 'id': 'year'}])]),
+                                                                            {'name': 'placement year',
+                                                                             'id': 'year'}])]),
                             dcc.Tab(label='Leaderboard for Workathon',
                                     children=[dash_table.DataTable(id='ranks', page_size=10,
                                                                    columns=[{'name': 'rank', 'id': 'rank'},
@@ -240,6 +245,11 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     if int(female_val) != 0:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
 
+    from_size = iterated_data.value_counts(subset=['from_shortname'])
+    to_size = iterated_data.value_counts(subset=['to_shortname'])
+    max_size = 40
+    iterated_data['from_size'] = iterated_data['from_shortname'].apply(lambda x: from_size[x] ** 0.8)
+    iterated_data['to_size'] = iterated_data['to_shortname'].apply(lambda x: to_size[x] ** 0.8)
     # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
@@ -256,20 +266,17 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
         fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines',
                                     line=dict(width=1, color='red')))
 
-    # format university display names on the dots
+    # add from_uni dots
+    fig.add_trace(go.Scattergeo(lon=iterated_data['longitude'], lat=iterated_data['latitude'], hoverinfo="text",
+                                text=iterated_data['from_uni'], mode="markers", name='graduated from',
+                                marker=dict(size=iterated_data['from_size'], symbol='circle', color=from_colour,
+                                            line=dict(width=3, color=from_colour))))
 
     # add to_uni dots
     fig.add_trace(go.Scattergeo(lon=iterated_data['to_longitude'], lat=iterated_data['to_latitude'],
                                 hoverinfo="text", text=iterated_data['to_uni'], mode="markers", name='hired by',
-                                marker=dict(size=2.5, color=to_colour,
+                                marker=dict(size=iterated_data['to_size'], color=to_colour,
                                             line=dict(width=3, color=to_colour))))
-
-    # add from_uni dots
-    fig.add_trace(go.Scattergeo(lon=iterated_data['longitude'], lat=iterated_data['latitude'], hoverinfo="text",
-                                text=iterated_data['from_uni'], mode="markers", name='graduated from',
-                                marker=dict(size=2.5, symbol='circle', color=from_colour,
-                                            line=dict(width=3, color=from_colour))))
-
     fig.update_layout(showlegend=True,
                       geo=dict(projection_type="equirectangular", showland=True, landcolor="whitesmoke",
                                countrycolor="silver", showcountries=True, showlakes=True, showcoastlines=True,
