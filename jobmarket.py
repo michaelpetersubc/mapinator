@@ -59,6 +59,7 @@ def preprocess(df):
 # workathon attributes
 workathondate = datetime.datetime(2021, 7, 2)
 count_colour = 'navy'
+count = len(inst_data[inst_data['created_at'] >= workathondate])
 
 inst_data = preprocess(inst_data)
 
@@ -79,81 +80,79 @@ app_server = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-align": "center"}),
-                       html.Div([html.H6("Author: Amedeus D'Souza, Vancouver School of Economics",
-                                         style={"float": "left", "margin": "auto"}),
-                                 html.Div(html.A(html.Button("Learn More"),
-                                                 href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'),
-                                          style={"float": "right", "margin": "auto"})]),
+                       html.Div(
+                           [html.H6("Author: Amedeus D'Souza, Vancouver School of Economics",
+                                    style={"float": "left", "margin": "auto"}),
+                            html.Div(html.A(html.Button("Learn More"),
+                                            href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'),
+                                     style={"float": "right", "margin": "auto"})]),
                        html.Br(),
                        html.Br(),
                        # workathon title in count_colour
-                       html.H2(('Cumulative Count Since ', workathondate.strftime('%x'), ' : ',
-                                len(inst_data[inst_data['created_at'] >= workathondate])),
+                       html.H2(('Cumulative Count Since ', workathondate.strftime('%x'), ' : ', count),
                                style={'text-align': 'center', 'color': count_colour}),
                        html.Br(),
                        html.Br(),
                        # html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
                        # html.Div("Either the From Institution or the Primary Fields must be set to something other than All for this to work"),
                        html.Div(
-                           [html.Div(["Applicant Institution", dcc.Dropdown(id="select_inst",
-                                                                            options=listfoo,
-                                                                            value=67,  # UBC
-                                                                            multi=True,
-                                                                            placeholder="Select Applicant Institution"
-                                                                            )],
+                           [html.Div(["Applicant Institution",
+                                      dcc.Dropdown(id="select_inst",
+                                                   options=listfoo,
+                                                   value=67,  # UBC
+                                                   multi=True,
+                                                   placeholder="Select Applicant Institution"
+                                                   )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
-                            html.Div(["Primary Specialization", dcc.Dropdown(id="select_stuff",
-                                                                             options=[{
-                                                                                 "label": "Primary Specializations - All",
-                                                                                 "value": "0"},
-                                                                                 {"label": "Development; Growth",
-                                                                                  "value": "1"},
-                                                                                 {"label": "Econometrics",
-                                                                                  "value": "2"},
-                                                                                 {"label": "Finance",
-                                                                                  "value": "6"},
-                                                                                 {"label": "Industrial Organization",
-                                                                                  "value": "7"},
-                                                                                 {
-                                                                                     "label": "Labor; Demographic Economics",
-                                                                                     "value": "10"},
-                                                                                 {"label": "Macroeconomics; Monetary",
-                                                                                  "value": "12"},
-                                                                                 {"label": "Microeconomics",
-                                                                                  "value": "13"},
-                                                                                 {"label": "Theory",
-                                                                                  "value": "15"},
-                                                                                 {"label": "Behavioral Economics",
-                                                                                  "value": "16"},
-                                                                                 {"label": "Political Economics",
-                                                                                  "value": "23"}],
-                                                                             value="0",
-                                                                             placeholder="Select Primary Specialization"
-                                                                             )],
+                            html.Div(["Primary Specialization",
+                                      dcc.Dropdown(id="select_stuff",
+                                                   options=[{"label": "Primary Specializations - All", "value": "0"},
+                                                            {"label": "Development; Growth",
+                                                             "value": "1"},
+                                                            {"label": "Econometrics",
+                                                             "value": "2"},
+                                                            {"label": "Finance",
+                                                             "value": "6"},
+                                                            {"label": "Industrial Organization",
+                                                             "value": "7"},
+                                                            {"label": "Labor; Demographic Economics", "value": "10"},
+                                                            {"label": "Macroeconomics; Monetary",
+                                                             "value": "12"},
+                                                            {"label": "Microeconomics",
+                                                             "value": "13"},
+                                                            {"label": "Theory",
+                                                             "value": "15"},
+                                                            {"label": "Behavioral Economics",
+                                                             "value": "16"},
+                                                            {"label": "Political Economics",
+                                                             "value": "23"}],
+                                                   value="0",
+                                                   placeholder="Select Primary Specialization"
+                                                   )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
-                            html.Div(["Position Type", dcc.Dropdown(id="select_sector",
-                                                                    options=[
-                                                                        {"label": "Position Type - All", "value": "0"},
-                                                                        {"label": "Assistant Professor", "value": "1"},
-                                                                        {"label": "Associate Professor", "value": "2"},
-                                                                        {"label": "Full Professor", "value": "3"},
-                                                                        {"label": "Professor (Unspecified)",
-                                                                         "value": "4"},
-                                                                        {"label": "Temporary Lecturer", "value": "5"},
-                                                                        {"label": "Post-Doc", "value": "6"},
-                                                                        {"label": "Lecturer", "value": "7"},
-                                                                        {"label": "Consultant", "value": "8"},
-                                                                        {"label": "Other Academic", "value": "9"},
-                                                                        {"label": "Other Non-Academic", "value": "10"},
-                                                                        {"label": "Tenured Professor", "value": "11"},
-                                                                        {"label": "Assistant or Associate Professor",
-                                                                         "value": "13"},
-                                                                        {
-                                                                            "label": "Visiting Professor/Lecturer/Instructor",
-                                                                            "value": "15"}],
-                                                                    value="0",
-                                                                    placeholder="Select Position Type"
-                                                                    )],
+                            html.Div(["Position Type",
+                                      dcc.Dropdown(id="select_sector",
+                                                   options=[
+                                                       {"label": "Position Type - All", "value": "0"},
+                                                       {"label": "Assistant Professor", "value": "1"},
+                                                       {"label": "Associate Professor", "value": "2"},
+                                                       {"label": "Full Professor", "value": "3"},
+                                                       {"label": "Professor (Unspecified)",
+                                                        "value": "4"},
+                                                       {"label": "Temporary Lecturer", "value": "5"},
+                                                       {"label": "Post-Doc", "value": "6"},
+                                                       {"label": "Lecturer", "value": "7"},
+                                                       {"label": "Consultant", "value": "8"},
+                                                       {"label": "Other Academic", "value": "9"},
+                                                       {"label": "Other Non-Academic", "value": "10"},
+                                                       {"label": "Tenured Professor", "value": "11"},
+                                                       {"label": "Assistant or Associate Professor",
+                                                        "value": "13"},
+                                                       {"label": "Visiting Professor/Lecturer/Instructor",
+                                                        "value": "15"}],
+                                                   value="0",
+                                                   placeholder="Select Position Type"
+                                                   )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
                             #                        dcc.Dropdown(id = "select_sector",
                             #                                     options = [{"label": "Recruiter Types - All", "value": "0"},
@@ -172,18 +171,19 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                             #                                     value = "0",
                             #                                     placeholder = "Select a type of recruiter"
                             #                                     ),
-                            html.Div(["Placement Year", dcc.Dropdown(id="slidey",
-                                                                     options=vals,
-                                                                     value=date.today().year,
-                                                                     placeholder="Select Year of Placement")],
+                            html.Div(["Placement Year",
+                                      dcc.Dropdown(id="slidey",
+                                                   options=vals,
+                                                   value=date.today().year,
+                                                   placeholder="Select Year of Placement")],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
-                            html.Div(["Female Placement Only", dcc.Dropdown(id="female",
-                                                                            options=[
-                                                                                {"label": "False", "value": "0"},
-                                                                                {"label": "True", "value": "1"}],
-                                                                            value="0",
-                                                                            placeholder="Select True for Female Only Placements"
-                                                                            )],
+                            html.Div(["Female Placement Only",
+                                      dcc.Dropdown(id="female",
+                                                   options=[{"label": "False", "value": "0"},
+                                                            {"label": "True", "value": "1"}],
+                                                   value="0",
+                                                   placeholder="Select True for Female Only Placements"
+                                                   )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        html.Br(),
                        html.Br(),
@@ -216,7 +216,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        ])
 
 
-# ,
+# call back app that updates values corresponding to labels above
 @app.callback([Output("my_map", "figure"), Output("my_cloud", "data"), Output('ranks', 'data')],
               [Input("select_inst", "value"),
                Input("select_stuff", "value"),
@@ -277,24 +277,24 @@ def plot_graph(fig, df):
     if len(df) != 0:
         add_lines(fig, df, line_colour)
         # add from_uni dots
-        fig.add_trace(go.Scattergeo(lon=df['longitude'], lat=df['latitude'], hoverinfo="text", text=df['from_uni'],
-                                    mode="markers",
-                                    name='graduated from',
-                                    marker=dict(size=df['from_size'].apply(lambda x: x ** 0.8), color=from_colour,
+        scale = lambda x: x ** 0.8
+        fig.add_trace(go.Scattergeo(lon=df['longitude'], lat=df['latitude'], hoverinfo="text",
+                                    text=df['from_uni'], mode="markers", name='graduated from',
+                                    marker=dict(size=df['from_size'].apply(scale), color=from_colour,
                                                 line=dict(width=3, color=from_colour))))
         # add to_uni dots
-        fig.add_trace(go.Scattergeo(lon=df['to_longitude'], lat=df['to_latitude'], hoverinfo="text", text=df['to_uni'],
-                                    mode="markers", name='hired by',
-                                    marker=dict(size=df['to_size'].apply(lambda x: x ** 0.8), color=to_colour,
+        fig.add_trace(go.Scattergeo(lon=df['to_longitude'], lat=df['to_latitude'], hoverinfo="text",
+                                    text=df['to_uni'], mode="markers", name='hired by',
+                                    marker=dict(size=df['to_size'].apply(scale), color=to_colour,
                                                 line=dict(width=3, color=to_colour))))
+    # cutomize the map
     fig.update_layout(showlegend=True,
                       geo=dict(projection_type="equirectangular", showland=True, landcolor="whitesmoke",
                                countrycolor="silver", showcountries=True, showlakes=True, showcoastlines=True,
-                               coastlinecolor="darkgrey", lakecolor="white",
-                               oceancolor="white"))
+                               coastlinecolor="darkgrey", lakecolor="white", oceancolor="white"))
 
 
-# magic vectorization stuff from the internet
+# magic vectorization stuff from the internet, adds lines to the map
 def add_lines(fig, df, colour):
     lons = np.empty(3 * len(df))
     lons[::3] = df['longitude']
