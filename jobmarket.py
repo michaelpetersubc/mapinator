@@ -38,10 +38,8 @@ else:
 
 def preprocess(df):
     df["startdate"] = pd.to_datetime(df["startdate"])  # convert object to datetime
-    df["rank"][df["rank"].notnull()] = "Rank: " + df["rank"][df["rank"].notnull()].astype(
-        str)
-    df["to_rank"][df["to_rank"].notnull()] = "Rank: " + df["to_rank"][
-        df["to_rank"].notnull()].astype(str)
+    df["rank"][df["rank"].notnull()] = "Rank: " + df["rank"][df["rank"].notnull()].astype(str)
+    df["to_rank"][df["to_rank"].notnull()] = "Rank: " + df["to_rank"][df["to_rank"].notnull()].astype(str)
 
     df["rank"] = df["rank"].fillna(" ")
     df["to_rank"] = df["to_rank"].fillna(" ")
@@ -58,8 +56,10 @@ def preprocess(df):
     return df
 
 
+# workathon attributes
 workathondate = datetime.datetime(2021, 7, 2)
 count_colour = 'navy'
+
 inst_data = preprocess(inst_data)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -86,6 +86,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                           style={"float": "right", "margin": "auto"})]),
                        html.Br(),
                        html.Br(),
+                       # workathon title in count_colour
                        html.H2(('Cumulative Count Since ', workathondate.strftime('%x'), ' : ',
                                 len(inst_data[inst_data['created_at'] >= workathondate])),
                                style={'text-align': 'center', 'color': count_colour}),
@@ -98,7 +99,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                             options=listfoo,
                                                                             value=67,  # UBC
                                                                             multi=True,
-                                                                            placeholder="Select institutions where applicants graduated from"
+                                                                            placeholder="Select Applicant Institution"
                                                                             )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
                             html.Div(["Primary Specialization", dcc.Dropdown(id="select_stuff",
@@ -127,7 +128,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                                  {"label": "Political Economics",
                                                                                   "value": "23"}],
                                                                              value="0",
-                                                                             placeholder="Select primary specialization"
+                                                                             placeholder="Select Primary Specialization"
                                                                              )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
                             html.Div(["Position Type", dcc.Dropdown(id="select_sector",
@@ -151,7 +152,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                                             "label": "Visiting Professor/Lecturer/Instructor",
                                                                             "value": "15"}],
                                                                     value="0",
-                                                                    placeholder="Select position type"
+                                                                    placeholder="Select Position Type"
                                                                     )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
                             #                        dcc.Dropdown(id = "select_sector",
@@ -174,14 +175,14 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                             html.Div(["Placement Year", dcc.Dropdown(id="slidey",
                                                                      options=vals,
                                                                      value=date.today().year,
-                                                                     placeholder="Select year of placement")],
+                                                                     placeholder="Select Year of Placement")],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
                             html.Div(["Female Placement Only", dcc.Dropdown(id="female",
                                                                             options=[
                                                                                 {"label": "False", "value": "0"},
                                                                                 {"label": "True", "value": "1"}],
                                                                             value="0",
-                                                                            placeholder="Select True for female only placements"
+                                                                            placeholder="Select True for Female Only Placements"
                                                                             )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        html.Br(),
@@ -218,7 +219,6 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
 # ,
 @app.callback([Output("my_map", "figure"), Output("my_cloud", "data"), Output('ranks', 'data')],
               [Input("select_inst", "value"),
-
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
                Input("slidey", "value"),
@@ -226,71 +226,76 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
 def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     # customize display options
     workathon = True
-    line_colour = 'navy'
-    to_colour = 'green'
-    from_colour = 'darkgoldenrod'
 
     if type(inst_val) is int:
         inst_val = [inst_val]
 
     iterated_data = inst_data.loc[
-        ((inst_data["from_oid"].isin(inst_val)) | (
-                inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
+        ((inst_data["from_oid"].isin(inst_val)) |
+         (inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
         ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
-        ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40))]
+        ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
+        ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
-    if not -1 == int(year_val):
-        iterated_data = iterated_data[iterated_data['startdate'].dt.year == int(year_val)]
-    if int(female_val) != 0:
+    if female_val is not None and int(female_val) == 1:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
+    iterated_data = add_labels(iterated_data)
 
-    from_size = iterated_data.value_counts(subset=['from_shortname'])
-    to_size = iterated_data.value_counts(subset=['to_shortname'])
-    max_size = 40
-    iterated_data['from_size'] = iterated_data['from_shortname'].apply(lambda x: from_size[x] ** 0.8)
-    iterated_data['to_size'] = iterated_data['to_shortname'].apply(lambda x: to_size[x] ** 0.8)
     # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
 
-    # set up vectorized loading
-    (lons, lats) = prep_data(iterated_data)
-    # load lines
-    fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines', showlegend=False,
-                                line=dict(width=1, color=line_colour)))
-
     if workathon:
         work_data = iterated_data[iterated_data['created_at'] >= workathondate]
-        (lons, lats) = prep_data(work_data)
-        fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines',
-                                    line=dict(width=1, color='red')))
+        add_lines(fig, work_data, 'red')
 
-    # add from_uni dots
-    fig.add_trace(go.Scattergeo(lon=iterated_data['longitude'], lat=iterated_data['latitude'], hoverinfo="text",
-                                text=iterated_data['from_uni'], mode="markers", name='graduated from',
-                                marker=dict(size=iterated_data['from_size'], symbol='circle', color=from_colour,
-                                            line=dict(width=3, color=from_colour))))
+    plot_graph(fig, iterated_data)
+    table_data = iterated_data['meta'].to_list()
 
-    # add to_uni dots
-    fig.add_trace(go.Scattergeo(lon=iterated_data['to_longitude'], lat=iterated_data['to_latitude'],
-                                hoverinfo="text", text=iterated_data['to_uni'], mode="markers", name='hired by',
-                                marker=dict(size=iterated_data['to_size'], color=to_colour,
-                                            line=dict(width=3, color=to_colour))))
+    return fig, table_data, make_rankings(inst_data)
+
+
+# creates labels for hovering over the dots on the map
+def add_labels(df):
+    from_size = df.value_counts(subset=['from_shortname'])
+    to_size = df.value_counts(subset=['to_shortname'])
+    df['from_size'] = df['from_shortname'].apply(lambda x: from_size[x])
+    df['to_size'] = df['to_shortname'].apply(lambda x: to_size[x])
+    cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude', 'from_size', 'to_size']
+    df[cols] = df[cols].fillna(value=0)
+    df['from_uni'] = df['from_uni'] + '<br>' + 'Graduated ' + df['from_size'].astype(int).astype(str) + ' student(s)'
+    df['to_uni'] = df['to_uni'] + '<br>' + 'Hired ' + df['to_size'].astype(int).astype(str) + ' graduate(s)'
+    return df
+
+
+# plots dots and lines
+def plot_graph(fig, df):
+    line_colour = 'navy'
+    to_colour = 'green'
+    from_colour = 'darkgoldenrod'
+
+    if len(df) != 0:
+        add_lines(fig, df, line_colour)
+        # add from_uni dots
+        fig.add_trace(go.Scattergeo(lon=df['longitude'], lat=df['latitude'], hoverinfo="text", text=df['from_uni'],
+                                    mode="markers",
+                                    name='graduated from',
+                                    marker=dict(size=df['from_size'].apply(lambda x: x ** 0.8), color=from_colour,
+                                                line=dict(width=3, color=from_colour))))
+        # add to_uni dots
+        fig.add_trace(go.Scattergeo(lon=df['to_longitude'], lat=df['to_latitude'], hoverinfo="text", text=df['to_uni'],
+                                    mode="markers", name='hired by',
+                                    marker=dict(size=df['to_size'].apply(lambda x: x ** 0.8), color=to_colour,
+                                                line=dict(width=3, color=to_colour))))
     fig.update_layout(showlegend=True,
                       geo=dict(projection_type="equirectangular", showland=True, landcolor="whitesmoke",
                                countrycolor="silver", showcountries=True, showlakes=True, showcoastlines=True,
                                coastlinecolor="darkgrey", lakecolor="white",
                                oceancolor="white"))
 
-    # format data for table
-
-    table_data = iterated_data['meta'].to_list()
-
-    return fig, table_data, make_rankings(inst_data)
-
 
 # magic vectorization stuff from the internet
-def prep_data(df):
+def add_lines(fig, df, colour):
     lons = np.empty(3 * len(df))
     lons[::3] = df['longitude']
     lons[1::3] = df['to_longitude']
@@ -299,13 +304,15 @@ def prep_data(df):
     lats[::3] = df['latitude']
     lats[1::3] = df['to_latitude']
     lats[2::3] = None
-    return (lons, lats)
+    fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines', showlegend=False,
+                                line=dict(width=1, color=colour)))
 
 
-def make_rankings(inst_data):
+# rankings for the workathon
+def make_rankings(df):
     rankings = {1: '\U0001F3C6', 2: '\U0001F947', 3: '\U0001F948', 4: '\U0001F949'}
-    work_data = inst_data[inst_data['created_at'] >= workathondate]
-    k = work_data['created_by'].value_counts().index
+    workathon_data = df[df['created_at'] >= workathondate]
+    k = workathon_data['created_by'].value_counts().index
     for i in range(len(k) - 4):
         rankings[i + 5] = i + 5
     data = []
