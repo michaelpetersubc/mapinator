@@ -60,9 +60,9 @@ def preprocess(df):
 
 inst_data = preprocess(inst_data)
 
-# workathon attributes, offset by 7 to change to pacific time
+# workathon attributes, offset by 8 to change to pacific time
 displaydate = datetime(2021,7,2)
-workathondate = displaydate - timedelta(hours = 7)
+workathondate = displaydate - timedelta(hours = 8)
 workathonend = workathondate + timedelta(days=3)
 count_colour = 'navy'
 count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
