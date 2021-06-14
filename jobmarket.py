@@ -37,7 +37,9 @@ else:
 
 
 def preprocess(df):
-    df["startdate"] = pd.to_datetime(df["startdate"])  # convert object to datetime
+    # convert object to datetime
+    df["startdate"] = pd.to_datetime(df["startdate"])
+
     df["rank"][df["rank"].notnull()] = "Rank: " + df["rank"][df["rank"].notnull()].astype(str)
     df["to_rank"][df["to_rank"].notnull()] = "Rank: " + df["to_rank"][df["to_rank"].notnull()].astype(str)
 
