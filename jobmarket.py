@@ -61,14 +61,14 @@ def preprocess(df):
 inst_data = preprocess(inst_data)
 
 # workathon attributes, offset by 8 to change to pacific time
-displaydate = datetime(2021,7,2)
-workathondate = displaydate - timedelta(hours = 8)
+displaydate = datetime(2021, 7, 2)
+workathondate = displaydate - timedelta(hours=8)
 workathonend = workathondate + timedelta(days=3)
 count_colour = 'navy'
 count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-listfoo = [{"label": "From Institutions - All", "value": 0}]
+listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
                  sorted(set(zip(inst_data.from_shortname, inst_data.from_oid)))]  # inst_data.from_institution_name
 # FIXME ideally instead of shortname we create new column inst_data_from_fullname = inst_data.from_institution_name
@@ -76,25 +76,31 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 #  either via MySQL or Python conditional on server; same for to
 fooextender = listfoo.extend(listextendfoo)
 
-vals = [{'label': 'All Years', 'value': '-1'}]
-for yr in range(2008, inst_data['year'].max() + 1):
+vals = []
+for yr in range(inst_data['year'].min(), inst_data['year'].max() + 1):
     vals.append({"label": yr, "value": yr})
-
+vals.append({'label': 'All Years', 'value': '-1'})
+vals.reverse()
 app_server = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-align": "center"}),
                        html.Div(
-                           [html.H6("Author: Amedeus D'Souza, Vancouver School of Economics",
+                           [html.H6(("Author: Amedeus D'Souza, Vancouver School of Economics",
+                                     html.Br(),
+                                     "Contributor: Jingze (Alex) Dong, Vancouver School of Economics"),
                                     style={"float": "left", "margin": "auto"}),
                             html.Div(html.A(html.Button("Learn More"),
                                             href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'),
-                                     style={"float": "right", "margin": "auto"})]),
+                                     style={"float": "right", "margin": "auto"})
+                            ]),
+                       html.Br(),
+                       html.Br(),
                        html.Br(),
                        html.Br(),
                        # workathon title in count_colour
                        html.H2(('Cumulative Count Since ', displaydate.strftime('%x'), ' : ', count),
-                               style={'text-align': 'center', 'color': count_colour}),
+                               style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
                        html.Br(),
                        html.Br(),
                        # html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
@@ -103,7 +109,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                            [html.Div(["Applicant Institution",
                                       dcc.Dropdown(id="select_inst",
                                                    options=listfoo,
-                                                   value=67,  # UBC
+                                                   value=0,  # All Inst
                                                    multi=True,
                                                    placeholder="Select Applicant Institution"
                                                    )],
@@ -178,8 +184,6 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                    placeholder="Select True for Female Only Placements"
                                                    )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
-                       html.Br(),
-                       html.Br(),
                        dcc.Graph(id="my_map", figure={}),
                        dcc.Tabs(
                            [dcc.Tab(label='Placement Details',
@@ -192,7 +196,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                  {"name": "position-type", "id": "position_name"},
                                                  {'name': 'gender', 'id': 'gender'},
                                                  {'name': 'placement year', 'id': 'year'}],
-                                        style_table={'height': '350px', 'overflowY': 'auto'},)]),
+                                        style_table={'height': '350px', 'overflowY': 'auto'}, )]),
                             dcc.Tab(label='Leaderboard for Workathon',
                                     children=[dash_table.DataTable(
                                         id='ranks', page_size=10,
@@ -233,16 +237,20 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     if female_val is not None and int(female_val) == 1:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
     iterated_data = add_labels(iterated_data)
+    if -1 in inst_val:
+        iterated_data = iterated_data[
+            (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
 
     # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
+    plot_graph(fig, iterated_data)
 
     if workathon:
-        work_data = iterated_data[iterated_data['created_at'] >= workathondate]
-        add_lines(fig, work_data, 'red')
+        work_data = iterated_data[
+            (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
+        add_lines(fig, work_data, 'purple')
 
-    plot_graph(fig, iterated_data)
     table_data = iterated_data['meta'].to_list()
 
     return fig, table_data, make_rankings(inst_data)
