@@ -12,7 +12,7 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
 from dotenv import load_dotenv
-import datetime
+from datetime import datetime, timedelta
 import numpy as np
 
 # Change to True if using SQL connector
@@ -31,13 +31,15 @@ if use_sql:
 else:
     # requires json file to be in the same folder as this file
     p = os.getcwd()
-    json_name = 'to_from_with_gender_time.json'
+    json_name = 'to_from_with_gender_time_old.json'
     p = p + '\\' + json_name
     inst_data = pd.read_json(p)
 
 
 def preprocess(df):
-    df["startdate"] = pd.to_datetime(df["startdate"])  # convert object to datetime
+    # convert object to datetime
+    df["startdate"] = pd.to_datetime(df["startdate"])
+
     df["rank"][df["rank"].notnull()] = "Rank: " + df["rank"][df["rank"].notnull()].astype(str)
     df["to_rank"][df["to_rank"].notnull()] = "Rank: " + df["to_rank"][df["to_rank"].notnull()].astype(str)
 
@@ -56,15 +58,17 @@ def preprocess(df):
     return df
 
 
-# workathon attributes
-workathondate = datetime.datetime(2021, 7, 2)
-count_colour = 'navy'
-count = len(inst_data[inst_data['created_at'] >= workathondate])
-
 inst_data = preprocess(inst_data)
 
+# workathon attributes, offset by 8 to change to pacific time
+displaydate = datetime(2021, 7, 2)
+workathondate = displaydate - timedelta(hours=8)
+workathonend = workathondate + timedelta(days=3)
+count_colour = 'navy'
+count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-listfoo = [{"label": "From Institutions - All", "value": 0}]
+listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
                  sorted(set(zip(inst_data.from_shortname, inst_data.from_oid)))]  # inst_data.from_institution_name
 # FIXME ideally instead of shortname we create new column inst_data_from_fullname = inst_data.from_institution_name
@@ -72,25 +76,31 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 #  either via MySQL or Python conditional on server; same for to
 fooextender = listfoo.extend(listextendfoo)
 
-vals = [{'label': 'All Years', 'value': '-1'}]
-for yr in range(2008, inst_data['year'].max() + 1):
+vals = []
+for yr in range(inst_data['year'].min(), inst_data['year'].max() + 1):
     vals.append({"label": yr, "value": yr})
-
+vals.append({'label': 'All Years', 'value': '-1'})
+vals.reverse()
 app_server = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-align": "center"}),
                        html.Div(
-                           [html.H6("Author: Amedeus D'Souza, Vancouver School of Economics",
+                           [html.H6(("Author: Amedeus D'Souza, Vancouver School of Economics",
+                                     html.Br(),
+                                     "Contributor: Jingze (Alex) Dong, Vancouver School of Economics"),
                                     style={"float": "left", "margin": "auto"}),
                             html.Div(html.A(html.Button("Learn More"),
                                             href='https://github.com/michaelpetersubc/mapinator/blob/master/mapinator_readme/mapinator_readme.md'),
-                                     style={"float": "right", "margin": "auto"})]),
+                                     style={"float": "right", "margin": "auto"})
+                            ]),
+                       html.Br(),
+                       html.Br(),
                        html.Br(),
                        html.Br(),
                        # workathon title in count_colour
-                       html.H2(('Cumulative Count Since ', workathondate.strftime('%x'), ' : ', count),
-                               style={'text-align': 'center', 'color': count_colour}),
+                       html.H2(('Cumulative Count Since ', displaydate.strftime('%x'), ' : ', count),
+                               style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
                        html.Br(),
                        html.Br(),
                        # html.Div([html.H5("Red: moved east to west.", style = {"color": "red"}), html.H5("Blue: moved west to east.", style = {"color": "blue"})]),
@@ -99,7 +109,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                            [html.Div(["Applicant Institution",
                                       dcc.Dropdown(id="select_inst",
                                                    options=listfoo,
-                                                   value=67,  # UBC
+                                                   value=0,  # All Inst
                                                    multi=True,
                                                    placeholder="Select Applicant Institution"
                                                    )],
@@ -107,25 +117,16 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                             html.Div(["Primary Specialization",
                                       dcc.Dropdown(id="select_stuff",
                                                    options=[{"label": "Primary Specializations - All", "value": "0"},
-                                                            {"label": "Development; Growth",
-                                                             "value": "1"},
-                                                            {"label": "Econometrics",
-                                                             "value": "2"},
-                                                            {"label": "Finance",
-                                                             "value": "6"},
-                                                            {"label": "Industrial Organization",
-                                                             "value": "7"},
+                                                            {"label": "Development; Growth", "value": "1"},
+                                                            {"label": "Econometrics", "value": "2"},
+                                                            {"label": "Finance", "value": "6"},
+                                                            {"label": "Industrial Organization", "value": "7"},
                                                             {"label": "Labor; Demographic Economics", "value": "10"},
-                                                            {"label": "Macroeconomics; Monetary",
-                                                             "value": "12"},
-                                                            {"label": "Microeconomics",
-                                                             "value": "13"},
-                                                            {"label": "Theory",
-                                                             "value": "15"},
-                                                            {"label": "Behavioral Economics",
-                                                             "value": "16"},
-                                                            {"label": "Political Economics",
-                                                             "value": "23"}],
+                                                            {"label": "Macroeconomics; Monetary", "value": "12"},
+                                                            {"label": "Microeconomics", "value": "13"},
+                                                            {"label": "Theory", "value": "15"},
+                                                            {"label": "Behavioral Economics", "value": "16"},
+                                                            {"label": "Political Economics", "value": "23"}],
                                                    value="0",
                                                    placeholder="Select Primary Specialization"
                                                    )],
@@ -137,8 +138,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                        {"label": "Assistant Professor", "value": "1"},
                                                        {"label": "Associate Professor", "value": "2"},
                                                        {"label": "Full Professor", "value": "3"},
-                                                       {"label": "Professor (Unspecified)",
-                                                        "value": "4"},
+                                                       {"label": "Professor (Unspecified)", "value": "4"},
                                                        {"label": "Temporary Lecturer", "value": "5"},
                                                        {"label": "Post-Doc", "value": "6"},
                                                        {"label": "Lecturer", "value": "7"},
@@ -146,8 +146,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                        {"label": "Other Academic", "value": "9"},
                                                        {"label": "Other Non-Academic", "value": "10"},
                                                        {"label": "Tenured Professor", "value": "11"},
-                                                       {"label": "Assistant or Associate Professor",
-                                                        "value": "13"},
+                                                       {"label": "Assistant or Associate Professor", "value": "13"},
                                                        {"label": "Visiting Professor/Lecturer/Instructor",
                                                         "value": "15"}],
                                                    value="0",
@@ -185,29 +184,25 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                    placeholder="Select True for Female Only Placements"
                                                    )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
-                       html.Br(),
-                       html.Br(),
                        dcc.Graph(id="my_map", figure={}),
                        dcc.Tabs(
                            [dcc.Tab(label='Placement Details',
-                                    children=[dash_table.DataTable(id="my_cloud", page_size=10,
-                                                                   style_table={'height': '350px', 'overflowY': 'auto'},
-                                                                   columns=[{"name": "graduated-from",
-                                                                             "id": "from_shortname"},
-                                                                            {"name": "gradschool-rank", "id": "rank"},
-                                                                            {"name": "hired-by", "id": "to_shortname"},
-                                                                            {"name": "hired-by-rank", "id": "to_rank"},
-                                                                            {"name": "position-type",
-                                                                             "id": "position_name"},
-                                                                            {'name': 'gender', 'id': 'gender'},
-                                                                            {'name': 'placement year',
-                                                                             'id': 'year'}])]),
+                                    children=[dash_table.DataTable(
+                                        id="my_cloud", page_size=10,
+                                        columns=[{"name": "graduated-from", "id": "from_shortname"},
+                                                 {"name": "gradschool-rank", "id": "rank"},
+                                                 {"name": "hired-by", "id": "to_shortname"},
+                                                 {"name": "hired-by-rank", "id": "to_rank"},
+                                                 {"name": "position-type", "id": "position_name"},
+                                                 {'name': 'gender', 'id': 'gender'},
+                                                 {'name': 'placement year', 'id': 'year'}],
+                                        style_table={'height': '350px', 'overflowY': 'auto'}, )]),
                             dcc.Tab(label='Leaderboard for Workathon',
-                                    children=[dash_table.DataTable(id='ranks', page_size=10,
-                                                                   columns=[{'name': 'rank', 'id': 'rank'},
-                                                                            {'name': 'creator id', 'id': 'created_by'}],
-                                                                   style_table={'height': '350px',
-                                                                                'overflowY': 'auto'})])]),
+                                    children=[dash_table.DataTable(
+                                        id='ranks', page_size=10,
+                                        columns=[{'name': 'rank', 'id': 'rank'},
+                                                 {'name': 'creator id', 'id': 'created_by'}],
+                                        style_table={'height': '350px', 'overflowY': 'auto'})])]),
                        html.Br(),
                        # placeholder for putting donor logos
                        html.Img(
@@ -217,7 +212,9 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
 
 
 # call back app that updates values corresponding to labels above
-@app.callback([Output("my_map", "figure"), Output("my_cloud", "data"), Output('ranks', 'data')],
+@app.callback([Output("my_map", "figure"),
+               Output("my_cloud", "data"),
+               Output('ranks', 'data')],
               [Input("select_inst", "value"),
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
@@ -240,16 +237,20 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     if female_val is not None and int(female_val) == 1:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
     iterated_data = add_labels(iterated_data)
+    if -1 in inst_val:
+        iterated_data = iterated_data[
+            (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
 
     # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
+    plot_graph(fig, iterated_data)
 
     if workathon:
-        work_data = iterated_data[iterated_data['created_at'] >= workathondate]
-        add_lines(fig, work_data, 'red')
+        work_data = iterated_data[
+            (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
+        add_lines(fig, work_data, 'purple')
 
-    plot_graph(fig, iterated_data)
     table_data = iterated_data['meta'].to_list()
 
     return fig, table_data, make_rankings(inst_data)
@@ -259,12 +260,12 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 def add_labels(df):
     from_size = df.value_counts(subset=['from_shortname'])
     to_size = df.value_counts(subset=['to_shortname'])
-    df['from_size'] = df['from_shortname'].apply(lambda x: from_size[x])
-    df['to_size'] = df['to_shortname'].apply(lambda x: to_size[x])
+    df['from_size'] = df['from_shortname'].apply(lambda x: int(from_size[x]))
+    df['to_size'] = df['to_shortname'].apply(lambda x: int(to_size[x]))
     cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude', 'from_size', 'to_size']
     df[cols] = df[cols].fillna(value=0)
-    df['from_uni'] = df['from_uni'] + '<br>' + 'Graduated ' + df['from_size'].astype(int).astype(str) + ' student(s)'
-    df['to_uni'] = df['to_uni'] + '<br>' + 'Hired ' + df['to_size'].astype(int).astype(str) + ' graduate(s)'
+    df['from_uni'] = df['from_uni'] + '<br>' + 'Graduated ' + df['from_size'].astype(str) + ' student(s)'
+    df['to_uni'] = df['to_uni'] + '<br>' + 'Hired ' + df['to_size'].astype(str) + ' graduate(s)'
     return df
 
 
@@ -287,7 +288,7 @@ def plot_graph(fig, df):
                                     text=df['to_uni'], mode="markers", name='hired by',
                                     marker=dict(size=df['to_size'].apply(scale), color=to_colour,
                                                 line=dict(width=3, color=to_colour))))
-    # cutomize the map
+    # customize the map
     fig.update_layout(showlegend=True,
                       geo=dict(projection_type="equirectangular", showland=True, landcolor="whitesmoke",
                                countrycolor="silver", showcountries=True, showlakes=True, showcoastlines=True,
@@ -310,6 +311,7 @@ def add_lines(fig, df, colour):
 
 # rankings for the workathon
 def make_rankings(df):
+    # emojis
     rankings = {1: '\U0001F3C6', 2: '\U0001F947', 3: '\U0001F948', 4: '\U0001F949'}
     workathon_data = df[df['created_at'] >= workathondate]
     k = workathon_data['created_by'].value_counts().index
