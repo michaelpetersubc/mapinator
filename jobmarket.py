@@ -63,7 +63,7 @@ inst_data = preprocess(inst_data)
 # workathon attributes, offset by 8 to change to pacific time
 displaydate = datetime(2021, 7, 2)
 workathondate = displaydate - timedelta(hours=8)
-workathonend = workathondate + timedelta(days=3)
+workathonend = displaydate + timedelta(days=3)
 count_colour = 'navy'
 count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
 
@@ -234,11 +234,10 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
     if female_val is not None and int(female_val) == 1:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
-    iterated_data = add_labels(iterated_data)
     if -1 in inst_val:
         iterated_data = iterated_data[
             (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
-
+    iterated_data = add_labels(iterated_data)
     # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
