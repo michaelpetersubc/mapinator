@@ -100,6 +100,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        html.Br(),
                        # workathon title in count_colour
                        html.H2(('Cumulative Count Since ', displaydate.strftime('%x'), ' : ', count),
+                               # href='https://w4s-2021.github.io/',
                                style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
                        html.Br(),
                        html.Br(),
@@ -221,9 +222,6 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                Input("slidey", "value"),
                Input('female', 'value')])
 def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
-    # customize display options
-    workathon = True
-
     if type(inst_val) is int:
         inst_val = [inst_val]
 
@@ -245,11 +243,6 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
     plot_graph(fig, iterated_data)
-
-    if workathon:
-        work_data = iterated_data[
-            (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
-        add_lines(fig, work_data, 'purple')
 
     table_data = iterated_data['meta'].to_list()
 
@@ -274,9 +267,10 @@ def plot_graph(fig, df):
     line_colour = 'navy'
     to_colour = 'green'
     from_colour = 'darkgoldenrod'
-
     if len(df) != 0:
         add_lines(fig, df, line_colour)
+        work_data = df[(df['created_at'] >= workathondate) & (df['created_at'] <= workathonend)]
+        add_lines(fig, work_data, 'purple')
         # add from_uni dots
         scale = lambda x: x ** 0.8
         fig.add_trace(go.Scattergeo(lon=df['longitude'], lat=df['latitude'], hoverinfo="text",
