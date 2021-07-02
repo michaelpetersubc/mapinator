@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 # Change to True if using SQL connector
-use_sql = True
+use_sql = False
 
 global inst_data
 
@@ -63,7 +63,7 @@ inst_data = preprocess(inst_data)
 # workathon attributes, offset by 8 to change to pacific time
 displaydate = datetime(2021, 7, 2)
 workathondate = displaydate - timedelta(hours=8)
-workathonend = displaydate + timedelta(days=3)
+workathonend = displaydate + timedelta(days=3) + timedelta(hours = 8)
 count_colour = 'navy'
 count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
 
