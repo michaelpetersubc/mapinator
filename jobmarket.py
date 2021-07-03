@@ -55,6 +55,9 @@ def preprocess(df):
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
     df = df.sort_values(by=['year'], ascending=False)
+    cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+    #df = df.dropna(subset = cols)
+
     return df
 
 
@@ -66,7 +69,8 @@ workathondate = displaydate - timedelta(hours=8)
 workathonend = displaydate + timedelta(days=3) + timedelta(hours = 8)
 count_colour = 'navy'
 count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
-
+cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+inst_data = inst_data.dropna(subset = cols)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
@@ -254,7 +258,7 @@ def add_labels(df):
     to_size = df.value_counts(subset=['to_shortname'])
     df['from_size'] = df['from_shortname'].apply(lambda x: int(from_size[x]))
     df['to_size'] = df['to_shortname'].apply(lambda x: int(to_size[x]))
-    cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude', 'from_size', 'to_size']
+    cols = ['from_size', 'to_size']
     df[cols] = df[cols].fillna(value=0)
     df['from_uni'] = df['from_uni'] + '<br>' + 'Graduated ' + df['from_size'].astype(str) + ' student(s)'
     df['to_uni'] = df['to_uni'] + '<br>' + 'Hired ' + df['to_size'].astype(str) + ' graduate(s)'
