@@ -55,7 +55,7 @@ def preprocess(df):
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
     df = df.sort_values(by=['year'], ascending=False)
-    cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+    #cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
     #df = df.dropna(subset = cols)
 
     return df
@@ -64,11 +64,11 @@ def preprocess(df):
 inst_data = preprocess(inst_data)
 
 # workathon attributes, offset by 8 to change to pacific time
-displaydate = datetime(2021, 7, 2)
+displaydate = datetime(2020, 6, 2)
 workathondate = displaydate - timedelta(hours=8)
-workathonend = displaydate + timedelta(days=3) + timedelta(hours = 8)
+workathonend = displaydate + timedelta(days=300) + timedelta(hours = 8)
 count_colour = 'navy'
-count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
+count = 5154
 cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
 inst_data = inst_data.dropna(subset = cols)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -103,7 +103,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        html.Br(),
                        html.Br(),
                        # workathon title in count_colour
-                       html.H2(('Cumulative Count Since ', displaydate.strftime('%x'), ' : ', count),
+                       html.H2(('Cumulative Count for Workathon : ', count),
                                # href='https://w4s-2021.github.io/',
                                style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
                        html.Br(),
@@ -201,13 +201,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                  {"name": "position-type", "id": "position_name"},
                                                  {'name': 'gender', 'id': 'gender'},
                                                  {'name': 'placement year', 'id': 'year'}],
-                                        style_table={'height': '350px', 'overflowY': 'auto'}, )]),
-                            dcc.Tab(label='Leaderboard for Workathon',
-                                    children=[dash_table.DataTable(
-                                        id='ranks', page_size=10,
-                                        columns=[{'name': 'rank', 'id': 'rank'},
-                                                 {'name': 'creator id', 'id': 'created_by'}],
-                                        style_table={'height': '350px', 'overflowY': 'auto'})])]),
+                                        style_table={'height': '350px', 'overflowY': 'auto'}, )])]),
                        html.Br(),
                        # placeholder for putting donor logos
                        html.Img(
@@ -272,8 +266,6 @@ def plot_graph(fig, df):
     from_colour = 'darkgoldenrod'
     if len(df) != 0:
         add_lines(fig, df, line_colour)
-        work_data = df[(df['created_at'] >= workathondate) & (df['created_at'] <= workathonend)]
-        add_lines(fig, work_data, 'purple')
         # add from_uni dots
         scale = lambda x: x ** 0.8
         fig.add_trace(go.Scattergeo(lon=df['longitude'], lat=df['latitude'], hoverinfo="text",
