@@ -25,7 +25,8 @@ if use_sql:
     db_connection = sql.connect(host='127.0.0.1', database=os.environ.get("foodatabase"),
                                 user=os.environ.get("foousername"), password=os.environ.get("foopassword"))
     db_cursor = db_connection.cursor(dictionary=True)
-    db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and to_oid !=893')
+    db_cursor.execute(
+        'select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and to_oid !=893')
     inst_data = pd.DataFrame(db_cursor.fetchall())
 else:
     # requires json file to be in the same folder as this file
@@ -54,8 +55,8 @@ def preprocess(df):
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
     df = df.sort_values(by=['year'], ascending=False)
-    #cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
-    #df = df.dropna(subset = cols)
+    # cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+    # df = df.dropna(subset = cols)
 
     return df
 
@@ -65,11 +66,11 @@ inst_data = preprocess(inst_data)
 # workathon attributes, offset by 8 to change to pacific time
 displaydate = datetime(2021, 7, 2)
 workathondate = displaydate - timedelta(hours=8)
-workathonend = displaydate + timedelta(days=3) + timedelta(hours = 8)
+workathonend = displaydate + timedelta(days=3) + timedelta(hours=8)
 count_colour = 'navy'
 count = 5154
-#cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
-#inst_data = inst_data.dropna(subset = cols)
+# cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+# inst_data = inst_data.dropna(subset = cols)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
@@ -189,18 +190,15 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                    )],
                                      style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
                        dcc.Graph(id="my_map", figure={}),
-                       dcc.Tabs(
-                           [dcc.Tab(label='Placement Details',
-                                    children=[dash_table.DataTable(
-                                        id="my_cloud", page_size=10,
-                                        columns=[{"name": "graduated-from", "id": "from_shortname"},
-                                                 {"name": "gradschool-rank", "id": "rank"},
-                                                 {"name": "hired-by", "id": "to_shortname"},
-                                                 {"name": "hired-by-rank", "id": "to_rank"},
-                                                 {"name": "position-type", "id": "position_name"},
-                                                 {'name': 'gender', 'id': 'gender'},
-                                                 {'name': 'placement year', 'id': 'year'}],
-                                        style_table={'height': '350px', 'overflowY': 'auto'}, )])]),
+                       dash_table.DataTable(id="my_cloud", page_size=10,
+                                            columns=[{"name": "graduated-from", "id": "from_shortname"},
+                                                     {"name": "gradschool-rank", "id": "rank"},
+                                                     {"name": "hired-by", "id": "to_shortname"},
+                                                     {"name": "hired-by-rank", "id": "to_rank"},
+                                                     {"name": "position-type", "id": "position_name"},
+                                                     {'name': 'gender', 'id': 'gender'},
+                                                     {'name': 'placement year', 'id': 'year'}],
+                                            style_table={'height': '350px', 'overflowY': 'auto'}),
                        html.Br(),
                        # placeholder for putting donor logos
                        html.Img(
@@ -211,8 +209,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
 
 # call back app that updates values corresponding to labels above
 @app.callback([Output("my_map", "figure"),
-               Output("my_cloud", "data"),
-               Output('ranks', 'data')],
+               Output("my_cloud", "data")],
               [Input("select_inst", "value"),
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
@@ -242,7 +239,7 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
     table_data = iterated_data['meta'].to_list()
 
-    return fig, table_data, make_rankings(inst_data)
+    return fig, table_data
 
 
 # creates labels for hovering over the dots on the map
@@ -295,21 +292,6 @@ def add_lines(fig, df, colour):
     lats[2::3] = None
     fig.add_trace(go.Scattergeo(lon=lons, lat=lats, mode='lines', showlegend=False,
                                 line=dict(width=1, color=colour)))
-
-
-# rankings for the workathon
-def make_rankings(df):
-    # emojis
-    rankings = {1: '\U0001F3C6', 2: '\U0001F947', 3: '\U0001F948', 4: '\U0001F949'}
-    workathon_data = df[df['created_at'] >= workathondate]
-    k = workathon_data['created_by'].value_counts().index
-    for i in range(len(k) - 4):
-        rankings[i + 5] = i + 5
-    data = []
-    for i in range(len(k)):
-        rank = rankings[i + 1]
-        data.append({'created_by': k[i], 'rank': rank})
-    return data
 
 
 server = app.server
