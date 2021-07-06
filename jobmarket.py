@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 # Change to True if using SQL connector
-use_sql = False
+use_sql = True
 
 global inst_data
 
@@ -199,24 +199,22 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                      {'name': 'gender', 'id': 'gender'},
                                                      {'name': 'placement year', 'id': 'year'}],
                                             style_table={'height': '350px', 'overflowY': 'auto'}),
-html.Br(),
-# placeholder for putting donor logos
-html.Img(
-    src='https://raw.githubusercontent.com/VoliCrank/pics/main/ubc_logo.jpg',
-    alt='picture broken...', style={'width': '20%'})
-])
+                       html.Br(),
+                       # placeholder for putting donor logos
+                       html.Img(
+                           src='https://raw.githubusercontent.com/VoliCrank/pics/main/ubc_logo.jpg',
+                           alt='picture broken...', style={'width': '20%'})
+                       ])
+
 
 # call back app that updates values corresponding to labels above
 @app.callback([Output("my_map", "figure"),
-
-
-Output("my_cloud", "data")],
-[Input("select_inst", "value"),
-Input("select_stuff", "value"),
-Input("select_sector", "value"),
-Input("slidey", "value"),
-Input('female', 'value')])
-
+               Output("my_cloud", "data")],
+              [Input("select_inst", "value"),
+               Input("select_stuff", "value"),
+               Input("select_sector", "value"),
+               Input("slidey", "value"),
+               Input('female', 'value')])
 def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
     if type(inst_val) is int:
         inst_val = [inst_val]
