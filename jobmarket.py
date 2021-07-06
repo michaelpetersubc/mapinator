@@ -25,8 +25,7 @@ if use_sql:
     db_connection = sql.connect(host='127.0.0.1', database=os.environ.get("foodatabase"),
                                 user=os.environ.get("foousername"), password=os.environ.get("foopassword"))
     db_cursor = db_connection.cursor(dictionary=True)
-    db_cursor.execute(
-        'select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and category_id in (1,2,6,7,10,12,13,15,16,23)')
+    db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and to_oid !=893'))
     inst_data = pd.DataFrame(db_cursor.fetchall())
 else:
     # requires json file to be in the same folder as this file
