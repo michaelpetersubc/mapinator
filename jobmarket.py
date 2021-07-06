@@ -55,18 +55,22 @@ def preprocess(df):
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
     df = df.sort_values(by=['year'], ascending=False)
+    #cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+    #df = df.dropna(subset = cols)
+
     return df
 
 
 inst_data = preprocess(inst_data)
 
 # workathon attributes, offset by 8 to change to pacific time
-displaydate = datetime(2021, 7, 2)
+displaydate = datetime(2020, 6, 2)
 workathondate = displaydate - timedelta(hours=8)
-workathonend = workathondate + timedelta(days=3)
+workathonend = displaydate + timedelta(days=300) + timedelta(hours = 8)
 count_colour = 'navy'
-count = len(inst_data[(inst_data['created_at'] >= workathondate) & (inst_data['created_at'] <= workathonend)])
-
+count = 5154
+cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+inst_data = inst_data.dropna(subset = cols)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
@@ -99,7 +103,8 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                        html.Br(),
                        html.Br(),
                        # workathon title in count_colour
-                       html.H2(('Cumulative Count Since ', displaydate.strftime('%x'), ' : ', count),
+                       html.H2(('Cumulative Count for Workathon : ', count),
+                               # href='https://w4s-2021.github.io/',
                                style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
                        html.Br(),
                        html.Br(),
@@ -196,13 +201,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                  {"name": "position-type", "id": "position_name"},
                                                  {'name': 'gender', 'id': 'gender'},
                                                  {'name': 'placement year', 'id': 'year'}],
-                                        style_table={'height': '350px', 'overflowY': 'auto'}, )]),
-                            dcc.Tab(label='Leaderboard for Workathon',
-                                    children=[dash_table.DataTable(
-                                        id='ranks', page_size=10,
-                                        columns=[{'name': 'rank', 'id': 'rank'},
-                                                 {'name': 'creator id', 'id': 'created_by'}],
-                                        style_table={'height': '350px', 'overflowY': 'auto'})])]),
+                                        style_table={'height': '350px', 'overflowY': 'auto'}, )])]),
                        html.Br(),
                        # placeholder for putting donor logos
                        html.Img(
@@ -221,9 +220,6 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                Input("slidey", "value"),
                Input('female', 'value')])
 def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
-    # customize display options
-    workathon = True
-
     if type(inst_val) is int:
         inst_val = [inst_val]
 
@@ -236,20 +232,14 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val):
 
     if female_val is not None and int(female_val) == 1:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
-    iterated_data = add_labels(iterated_data)
     if -1 in inst_val:
         iterated_data = iterated_data[
             (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
-
+    iterated_data = add_labels(iterated_data)
     # create initial empty figure
     fig = go.Figure(go.Scattergeo())
     fig.update_layout(height=800)
     plot_graph(fig, iterated_data)
-
-    if workathon:
-        work_data = iterated_data[
-            (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
-        add_lines(fig, work_data, 'purple')
 
     table_data = iterated_data['meta'].to_list()
 
@@ -262,7 +252,7 @@ def add_labels(df):
     to_size = df.value_counts(subset=['to_shortname'])
     df['from_size'] = df['from_shortname'].apply(lambda x: int(from_size[x]))
     df['to_size'] = df['to_shortname'].apply(lambda x: int(to_size[x]))
-    cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude', 'from_size', 'to_size']
+    cols = ['from_size', 'to_size']
     df[cols] = df[cols].fillna(value=0)
     df['from_uni'] = df['from_uni'] + '<br>' + 'Graduated ' + df['from_size'].astype(str) + ' student(s)'
     df['to_uni'] = df['to_uni'] + '<br>' + 'Hired ' + df['to_size'].astype(str) + ' graduate(s)'
@@ -274,7 +264,6 @@ def plot_graph(fig, df):
     line_colour = 'navy'
     to_colour = 'green'
     from_colour = 'darkgoldenrod'
-
     if len(df) != 0:
         add_lines(fig, df, line_colour)
         # add from_uni dots
