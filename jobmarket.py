@@ -25,7 +25,7 @@ if use_sql:
     db_connection = sql.connect(host='127.0.0.1', database=os.environ.get("foodatabase"),
                                 user=os.environ.get("foousername"), password=os.environ.get("foopassword"))
     db_cursor = db_connection.cursor(dictionary=True)
-    db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and to_oid !=893'))
+    db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and to_oid !=893')
     inst_data = pd.DataFrame(db_cursor.fetchall())
 else:
     # requires json file to be in the same folder as this file
@@ -63,13 +63,13 @@ def preprocess(df):
 inst_data = preprocess(inst_data)
 
 # workathon attributes, offset by 8 to change to pacific time
-displaydate = datetime(2020, 6, 2)
+displaydate = datetime(2021, 7, 2)
 workathondate = displaydate - timedelta(hours=8)
-workathonend = displaydate + timedelta(days=300) + timedelta(hours = 8)
+workathonend = displaydate + timedelta(days=3) + timedelta(hours = 8)
 count_colour = 'navy'
 count = 5154
-cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
-inst_data = inst_data.dropna(subset = cols)
+#cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
+#inst_data = inst_data.dropna(subset = cols)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
