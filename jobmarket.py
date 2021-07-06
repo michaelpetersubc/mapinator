@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 # Change to True if using SQL connector
-use_sql = False
+use_sql = True
 
 global inst_data
 
