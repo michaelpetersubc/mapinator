@@ -26,7 +26,7 @@ __From the Vancouver School of Economics:__
 - Katherine Swander
 - Jin Wang
 - Hongkai Yu
-- James Yuming Yu
+- [James Yuming Yu](https://github.com/jbrightuniverse)
 - Ziheng Zhao
 
 __From the University Transition Program (UBC):__
