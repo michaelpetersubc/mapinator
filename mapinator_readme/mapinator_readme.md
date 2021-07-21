@@ -66,9 +66,10 @@ The limitations of the data include:
 - Recruiter types are self reported by the institutions.
 - There may be ambiguity in the assignment of positions. In particular, "Lecturers" at certain institutions - in particular European institutions - are indeed "Assistant Professors". Similarly, there are instances of ambiguity between "Post-Docs" and Visiting Assistant Professors, the latter of which are classified as "Visiting Professor/Lecturer/Instructor". Instructors and Assisant Professors of Teaching are classified as "Visiting Professor/Lecturer/Instructor", "Lecturer", or "Assistant Professor".
 - Rankings are currently only assigned to a single department in an institution.
-- Applicants whose department of academic placement is ambiguous has been assigned by default to the Economics department of said institution.
+- Applicants whose department of academic placement is ambiguous, or not present in the database, have been assigned by default to the Economics department of said institution, if this department exists. If not, they have been assigned to the first listed department.
 - For private institutions with multiple branches, the assignment of horizontal position representation does not necessarily accurately reflect branch of placement.
 - Some applicants may have graduated from an institution where they were awarded an undergraduate or Master's degree rather than a Ph.D. While the vast majority of placements are of Ph.D. graduates, there may be some which are not, and these rare exceptions are not explicitly indicated in the sample at this time.
+- Placements at multinational corporations may have inaccurate location information. Specifically, all branches of a particular private sector organization may not be present in the dataset.
 - Select outcomes erroneously display the hiring institution as the institution an applicant graduated from. The number of outcomes displaying this behaviour is not known at this time.
 - A small number of outcomes correspond to applicants who were hired as research or teaching assistants during their Ph.D. program as opposed to after.
 - A small number of outcomes, the majority of which were placements prior to 2018, exist in the database more than once.
