@@ -1,17 +1,59 @@
 # Economics Ph.D. Job Placement Data
 > **Author**
-- [Amedeus D'Souza, Vancouver School of Economics](https://sites.google.com/view/aadsouza)
+- [Amedeus Akira Dsouza, Vancouver School of Economics](https://aadsouza.github.io)
 
 > **Contributors**
-- Abby Bu, Vancouver School of Economics
-- [Felipe Grosso, Vancouver School of Economics](https://www.linkedin.com/in/felipe-grosso/)
-- Caroline Luo, Vancouver School of Economics
-- Wenxin Ma, Vancouver School of Economics
-- [Michael Peters, Vancouver School of Economics](https://montoya.econ.ubc.ca)
-- Yongli Shi, Vancouver School of Economics
-- Hongkai Yu, Vancouver School of Economics
 
-On this dashboard we present geodetic plots that show the flows of Ph.D. graduates' placements. We sourced publically available data on the placements of Ph.D. graduates, including the institution where each applicant graduated from and the institution where they found a job. We added horizontal position representations (specifically latitudes and longitudes) to each of the institutions. It is worth noting that we restrict our analysis to applicants that were placed after 2008 and focus on institutions with economics departments ranked in the top 100 according to [rankings compiled by Tilburg University](https://econtop.uvt.nl/rankinglist.php) in 2016.
+__From the Vancouver School of Economics:__
+- Munkhzaya Baatarzaya
+- Alexandra Bennett
+- Abby Bu
+- Alex Dong
+- Wu Frank
+- [Felipe Grosso](https://www.linkedin.com/in/felipe-grosso/)
+- Kuhu Gupta
+- Jonah Heyl
+- Felix Huang
+- Eric Leung
+- Caroline Luo
+- Wenxin Ma
+- Sarah Maham Malik
+- Maria Ines Moran
+- Huitong Niu
+- [Michael Peters](https://montoya.econ.ubc.ca)
+- Soren Rajani
+- Yongli Shi
+- Katherine Swander
+- Jin Wang
+- Hongkai Yu
+- James Yuming Yu
+- Ziheng Zhao
+
+__From the University Transition Program (UBC):__
+- Jonathan Chan
+- Alisa Mandlis
+- James Thom
+- Jacky Xue
+- Michael Yang
+- Sarah Yu
+
+__From Other Departments and Organizations:__
+- Aidan Russell Lim Chua, UBC Arts
+- Alexandra Cooke, UBC Linguistics (Alumni)
+- Katherine Feng, UBC Science
+- Saul George, UBC Science
+- Floria Gu, UBC Dept. of Computer Science
+- Aarim Khan, McGill Economics
+- Karen Liu, Sauder School of Business
+- Jonathan Nah, UBC Science
+- Yingying Wang, Sauder School of Business
+- Kieran Weaver, UBC Dept. of Computer Engineering
+- Kaiqian Yang, UBC Science
+- Natalie Yuan, UBC Arts
+- Kaijue Zhao, Sauder School of Business
+- Ying Zeng, UBC Arts
+
+On this dashboard we present geodetic plots that show the flows of Ph.D. graduates' placements. We sourced publically available data on the placements of Ph.D. graduates, including the institution where each applicant graduated from and the institution where they found a job. We added horizontal position representations (specifically latitudes and longitudes) to each of the institutions. It is worth noting that, in the summary charts below, we focus on institutions with economics departments ranked in the top 100 according to [rankings compiled by Tilburg University](https://econtop.uvt.nl/rankinglist.php) in 2016.
 
 We organize the maps by four categories: institution where the appliant graduated from, their primary specialization, type of position, and placement year. Notice that the dropdown allows you to select a basket of institutions for which you'd like the map to be generated. Below the map, the same data is presented as a table for convenience.
 
@@ -27,9 +69,12 @@ The limitations of the data include:
 - Applicants whose department of academic placement is ambiguous has been assigned by default to the Economics department of said institution.
 - For private institutions with multiple branches, the assignment of horizontal position representation does not necessarily accurately reflect branch of placement.
 - Some applicants may have graduated from an institution where they were awarded an undergraduate or Master's degree rather than a Ph.D. While the vast majority of placements are of Ph.D. graduates, there may be some which are not, and these rare exceptions are not explicitly indicated in the sample at this time.
+- Select outcomes erroneously display the hiring institution as the institution an applicant graduated from. The number of outcomes displaying this behaviour is not known at this time.
+- A small number of outcomes correspond to applicants who were hired as research or teaching assistants during their Ph.D. program as opposed to after.
+- A small number of outcomes, the majority of which were placements prior to 2018, exist in the database more than once.
+- A small number of outcomes from 2006 and years prior to 2005 may be misreported as being placed in a different year. Notably, many 2006 entries are reported as 2007, and some pre-2005 entries are reported as either 2005 or 2022.
 
 ## Coverage
-
 
 ```python
 import matplotlib.pyplot as plt
