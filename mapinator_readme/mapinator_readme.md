@@ -32,7 +32,6 @@ The limitations of the data include:
 
 
 ```python
-import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import IPython
@@ -42,6 +41,7 @@ import warnings
 warnings.filterwarnings('ignore')
 from dotenv import load_dotenv
 load_dotenv()
+from collections import defaultdict
 
 db_connection = sql.connect(host='127.0.0.1', database= os.environ.get("foodatabase"), user= os.environ.get("foousername"), password= os.environ.get("foopassword"))
 
@@ -49,43 +49,139 @@ db_cursor = db_connection.cursor(dictionary=True)
 
 db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and category_id in (1,2,6,7,10,12,13,15,16,23)')
 
-inst_data = pd.DataFrame(db_cursor.fetchall())
 ```
 
 
 ```python
-#by institution name - multiple oid for same name
-inst_data_top100 = inst_data.loc[(inst_data["rank"] <= 100) & (inst_data["rank"] > 0)]
+data_pre = defaultdict(set)
+data_all = defaultdict(set)
+var = db_cursor.fetchall()
+for entry in var:
+    if entry["rank"] and entry["rank"] <= 100 and entry["rank"] > 0:
+        #by institution name - multiple oid for same name
+        data_all[(entry["from_institution_name"], entry["rank"])].add(entry["aid"])
+        if "2021-07" not in str(entry["created_at"]):
+            data_pre[(entry["from_institution_name"], entry["rank"])].add(entry["aid"])
 
 fig, ax = plt.subplots(figsize = (20, 40))
-inst_group_count_top100 = inst_data_top100.groupby(by = "from_institution_name").count()["aid"]
-inst_group_count_top100.plot.barh(ax = ax)
+
+institutions = list(data_all.keys())
+institutions.sort(key = lambda x: x[1])
+data_all_processed = [len(data_all[i]) for i in institutions]
+vticks = np.arange(len(institutions))
+ax.barh(vticks, data_all_processed, align = "center", color = "orange", label = "Cumulative Collected Total")
+ax.set_yticks(vticks)
+ax.set_yticklabels([i[0] for i in institutions])
+ax.invert_yaxis()
+
+old_inst = list(data_pre.keys())
+old_inst.sort(key = lambda x: x[1])
+data_old_processed = [len(data_pre[i]) for i in old_inst]
+yticks = np.arange(len(old_inst))
+ax.barh(yticks, data_old_processed, align = "center", color = "blue", label = "Collected Before July 2021")
+
+ax.set_title("Number of Graduates with Recorded Outcomes by Institution of Graduation - Top 100 Institutions")
 ax.set_xlabel("Number of graduates with recorded outcomes")
 ax.set_ylabel("Graduated From")
-x_ticks = np.arange(0, 275, 25)
+x_ticks = np.arange(0, 300, 25)
 ax.set_xticks(x_ticks)
-ax.set_title("Number of Graduates with Recorded Outcomes by Institution of Graduation - Top 100 Institutions")
+ax.legend()
 ax.grid()
 ```
 
 
-![png](output_7_0.png)
+![png](top_100.png)
 
 
 
 ```python
+data_pre = defaultdict(int)
+data_all = defaultdict(int)
+var = db_cursor.fetchall()
+
+applicants = defaultdict(list)
+for entry in var:
+    if entry["rank"] and entry["rank"] <= 100 and entry["rank"] > 0:
+        applicants[entry["aid"]].append((int(str(entry["startdate"])[:4]), str(entry["created_at"])))
+
+for applicant in applicants:
+    smallest_year = min(applicants[applicant], key = lambda x: x[0])
+    data_all[smallest_year[0]] += 1
+    if "2021-07" not in smallest_year[1]:
+        data_pre[smallest_year[0]] += 1
+
 fig, ax = plt.subplots(figsize = (20, 10))
-inst_data_top100["year"] = pd.DatetimeIndex(inst_data_top100["startdate"]).year
-year_group_count_top100 = inst_data_top100.groupby(by = "year").count()["aid"]
-year_group_count_top100.plot.bar(ax = ax, rot = 0)
+
+years = list(data_all.keys())
+years.sort()
+data_all_processed = [data_all[i] for i in years]
+ticks = np.arange(len(years))
+ax.set_xticks(ticks)
+ax.set_xticklabels(years)
+ax.bar(ticks, data_all_processed, align = "center", color = "orange", label = "Cumulative Collected Total")
+
+old_years = list(data_pre.keys())
+old_years.sort()
+data_old_processed = [data_pre[i] for i in old_years]
+xticks = np.arange(len(old_years))
+ax.bar(xticks, data_old_processed, align = "center", color = "blue", label = "Collected Before July 2021")
+
 ax.set_xlabel("Placement Year")
 ax.set_ylabel("Number of graduates with recorded outcomes")
-y_ticks = np.arange(0, 500, 50)
+y_ticks = np.arange(0, 550, 50)
 ax.set_yticks(y_ticks)
-ax.set_title("Number of Graduates with Recorded Outcomes by Year")
+ax.set_title("Number of Graduates with Recorded Outcomes by Year (first-time hires only)")
+ax.legend()
 ax.grid()
 ```
 
 
-![png](output_8_0.png)
+![png](years_first_time.png)
+
+
+
+```python
+data_pre = defaultdict(int)
+data_all = defaultdict(int)
+var = db_cursor.fetchall()
+
+applicants = defaultdict(list)
+for entry in var:
+    if entry["rank"] and entry["rank"] <= 100 and entry["rank"] > 0:
+        applicants[entry["aid"]].append((int(str(entry["startdate"])[:4]), str(entry["created_at"])))
+
+for applicant in applicants:
+    for year in applicants[applicant]:
+        data_all[year[0]] += 1
+        if "2021-07" not in year[1]:
+            data_pre[year[0]] += 1
+
+fig, ax = plt.subplots(figsize = (20, 10))
+
+years = list(data_all.keys())
+years.sort()
+data_all_processed = [data_all[i] for i in years]
+ticks = np.arange(len(years))
+ax.set_xticks(ticks)
+ax.set_xticklabels(years)
+ax.bar(ticks, data_all_processed, align = "center", color = "orange", label = "Cumulative Collected Total")
+
+old_years = list(data_pre.keys())
+old_years.sort()
+data_old_processed = [data_pre[i] for i in old_years]
+xticks = np.arange(len(old_years))
+ax.bar(xticks, data_old_processed, align = "center", color = "blue", label = "Collected Before July 2021")
+
+ax.set_xlabel("Placement Year")
+ax.set_ylabel("Number of graduates with recorded outcomes")
+y_ticks = np.arange(0, 550, 50)
+ax.set_yticks(y_ticks)
+ax.set_title("Number of Graduates with Recorded Outcomes by Year (all hires)")
+ax.legend()
+ax.grid()
+```
+
+
+![png](years_all.png)
+
 
