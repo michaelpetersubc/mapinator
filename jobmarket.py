@@ -154,7 +154,7 @@ app.layout = html.Div([html.H1("Economics Ph.D. Placement Data", style={"text-al
                                                        {"label": "Assistant or Associate Professor", "value": "13"},
                                                        {"label": "Visiting Professor/Lecturer/Instructor",
                                                         "value": "15"}],
-                                                   value="0",
+                                                   value="1",
                                                    placeholder="Select Position Type"
                                                    )],
                                      style={"width": "20%", "float": "left", "margin": "auto"}),
