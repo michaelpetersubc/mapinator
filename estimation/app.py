@@ -4,6 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 import numpy as np
+import math
 
 import requests
 text = requests.get("https://raw.githubusercontent.com/michaelpetersubc/mapinator/master/estimation/REPORT.md").text
@@ -67,7 +68,10 @@ app.validation_layout = html.Div([
 ])
 
 def pois(mean, val):
-    return (mean**val) * np.exp(-mean) / np.math.factorial(val)
+    return (mean**val) * np.exp(-mean) / np.math.factorial(round(val))
+
+def gamma(mean, val):
+    return (mean**val) * np.exp(-mean) / math.gamma(val + 1)
 
 @app.callback(Output('page-content', 'children'), Input('url', 'pathname'))
 def display_page(pathname):
@@ -136,6 +140,8 @@ def display_institution(pathname):
             if str(index_to_id[i]) in rankings and count != 0:
                 top_inbound.append(rankings[str(index_to_id[i])]["name"] + f" ({count} placement{['', 's'][int(count != 1)]})")
 
+        normal_outbound = np.prod([gamma(m, v) for m, v in zip(average_outbound_self_rates, average_outbound_self_rates)])
+        normal_inbound = np.prod([gamma(m, v) for m, v in zip(average_inbound_self_rates, average_inbound_self_rates)])
         return [
             html.Div([
                 html.Div([
@@ -159,14 +165,14 @@ def display_institution(pathname):
                 dcc.Markdown(f"#### Total Placements from {name} to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in personal_outbound_self_rates])])}", className = "six columns"),
                 dcc.Markdown(f"#### Average Placements from a generic Type {my_type} institution to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in average_outbound_self_rates])])}", className = "six columns"),
             ], className = "row"),
-            dcc.Markdown(f"###### Probability of actual placements given average: {star.join([str(round(pois(m, v), 2)) for m, v in zip(average_outbound_self_rates, personal_outbound_self_rates)])} = {round(np.prod([pois(m, v) for m, v in zip(average_outbound_self_rates, personal_outbound_self_rates)]), 4)}"),
+            dcc.Markdown(f"###### Normalized Likelihood of placements given average: {star.join([str(round(pois(m, v), 2)) for m, v in zip(average_outbound_self_rates, personal_outbound_self_rates)])} / {round(normal_outbound, 2)} = {round(np.prod([pois(m, v) for m, v in zip(average_outbound_self_rates, personal_outbound_self_rates)]) / normal_outbound, 4)}"),
             dcc.Markdown(f"#### Sample Variance in Placements from Type {my_type} to:\n{newline.join([': '.join(b) for b in zip(labels, [str(round(a, 2)) for a in outbound_variance])])}", style = {"text-align": "center"}),
             dcc.Markdown("---"),
             html.Div([
                 dcc.Markdown(f"#### Total Placements to {name} from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in personal_inbound_self_rates])])}", className = "six columns"),
                 dcc.Markdown(f"#### Average Placements to a generic Type {my_type} institution from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in average_inbound_self_rates])])}", className = "six columns"),
             ], className = "row"),
-            dcc.Markdown(f"###### Probability of actual placements given average: {star.join([str(round(pois(m, v), 2)) for m, v in zip(average_inbound_self_rates, personal_inbound_self_rates)])} = {round(np.prod([pois(m, v) for m, v in zip(average_inbound_self_rates, personal_inbound_self_rates)]), 4)}"),
+            dcc.Markdown(f"###### Normalized Likelihood of placements given average: {star.join([str(round(pois(m, v), 2)) for m, v in zip(average_inbound_self_rates, personal_inbound_self_rates)])}  / {round(normal_inbound, 2)} = {round(np.prod([pois(m, v) for m, v in zip(average_inbound_self_rates, personal_inbound_self_rates)])  / normal_inbound, 4)}"),
             dcc.Markdown(f"#### Sample Variance in Placements to Type {my_type} from:\n{newline.join([': '.join(b) for b in zip(labels, [str(round(a, 2)) for a in inbound_variance])])}", style = {"text-align": "center"}),
             dcc.Markdown("---"),
             html.H3(f"General Metrics for Type {my_type}", style = {"text-align": "center"}),
