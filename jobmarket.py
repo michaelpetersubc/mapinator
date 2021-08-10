@@ -210,10 +210,11 @@ app.layout = html.Div([html.Div([
 
 @app.callback(Output('select_inst', 'value'), Input('url', 'pathname'))
 def display_page(pathname):
-    if pathname is None:
+    if pathname is None or len(pathname) <= 1:
         return 0
     oid = pathname[1:]
-    if oid.isdigit() and len(inst_data[inst_data['from_oid'] == int(oid)]) > 0:
+    print(len(oid), oid.isdigit())
+    if len(oid) > 0 and oid.isdigit() and len(inst_data[inst_data['from_oid'] == int(oid)]) > 0:
         return int(oid)
     return 0
 
