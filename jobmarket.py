@@ -31,7 +31,7 @@ if use_sql:
 else:
     # requires json file to be in the same folder as this file
     p = os.getcwd()
-    json_name = 'to_from_with_gender_time_old.json'
+    json_name = 'to_from_with_gender_time.json'
     p = p + '\\' + json_name
     inst_data = pd.read_json(p)
 
