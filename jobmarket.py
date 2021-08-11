@@ -110,7 +110,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets, title = "Ma
 
 app.layout = html.Div([html.Div([
     dcc.Location(id='url', refresh=False),
-    html.H1("Economics Ph.D. Placement Data", style={"text-align": "center"}),
+    html.H1("Mapinator: Economics Ph.D. Placement Data", style={"text-align": "center"}),
     # workathon title in count_colour
     html.H5(('Cumulative Count for Workathon : ', count),
             # href='https://w4s-2021.github.io/',
