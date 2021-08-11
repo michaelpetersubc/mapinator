@@ -50,7 +50,7 @@ if use_sql:
 else:
     # requires json file to be in the same folder as this file
     p = os.getcwd()
-    json_name = 'to_from_with_gender_time_old.json'
+    json_name = 'name_of_json_file.json'
     p = p + '\\' + json_name
     inst_data = pd.read_json(p)
 
@@ -110,7 +110,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets, title = "Ma
 
 app.layout = html.Div([html.Div([
     dcc.Location(id='url', refresh=False),
-    html.H1("Economics Ph.D. Placement Data", style={"text-align": "center"}),
+    html.H1("Mapinator: Economics Ph.D. Placement Data", style={"text-align": "center"}),
     # workathon title in count_colour
     html.H5(('Cumulative Count for Workathon : ', count),
             # href='https://w4s-2021.github.io/',
@@ -191,12 +191,12 @@ app.layout = html.Div([html.Div([
          #                                     value = "0",
          #                                     placeholder = "Select a type of recruiter"
          #                                     ),
-         html.Div(["Female Placement Only",
-                   dcc.Dropdown(id="female",
+         html.Div(["Women-Only Placements",
+                   dcc.Dropdown(id="women",
                                 options=[{"label": "False", "value": "0"},
                                          {"label": "True", "value": "1"}],
                                 value="0",
-                                placeholder="Select True for Female Only Placements"
+                                placeholder="Select True for Women-Only Placements"
                                 )],
                   style={"width": "20%", "float": "left", "margin": "auto"}),
          html.Div(["Placement Year",
@@ -220,7 +220,7 @@ app.layout = html.Div([html.Div([
                                   {"name": "hired-by", "id": "to_shortname"},
                                   {"name": "hired-by-rank", "id": "to_rank"},
                                   {"name": "position-type", "id": "position_name"},
-                                  {'name': 'gender', 'id': 'gender'},
+                                  {'name': 'sex', 'id': 'gender'},
                                   {'name': 'placement year', 'id': 'year'}],
                          style_table={'overflowY': 'auto'}),
     html.Br(),
@@ -261,9 +261,9 @@ def display_page(pathname):
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
                Input("slidey", "value"),
-               Input('female', 'value'), 
+               Input('women', 'value'), 
                Input('url', 'pathname')])
-def mapinator(inst_val, spec_val, sect_val, year_val, female_val, pathname):
+def mapinator(inst_val, spec_val, sect_val, year_val, women_val, pathname):
     if not year_val:
         year_val = "-1"
     if not sect_val:
@@ -283,7 +283,7 @@ def mapinator(inst_val, spec_val, sect_val, year_val, female_val, pathname):
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
         ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
-    if female_val is not None and int(female_val) == 1:
+    if women_val is not None and int(women_val) == 1:
         iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
     if -1 in inst_val:
         iterated_data = iterated_data[
