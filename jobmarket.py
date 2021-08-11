@@ -11,6 +11,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import numpy as np
 import json
@@ -39,8 +40,9 @@ with open("oid_lookup.json") as f:
 global inst_data
 
 if use_sql:
-    db_connection = sql.connect(host='127.0.0.1', port = 3306, database="econjobmarket_research",
-                                user="james", password="4james2use")
+    load_dotenv()
+    db_connection = sql.connect(host='127.0.0.1', database=os.environ.get("foodatabase"),
+                                user=os.environ.get("foousername"), password=os.environ.get("foopassword"))
     db_cursor = db_connection.cursor(dictionary=True)
     db_cursor.execute(
         'select * from to_data t join from_data f on t.aid=f.aid where to_latitude is not null and latitude is not null and to_oid !=893')
