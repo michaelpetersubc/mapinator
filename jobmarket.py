@@ -231,27 +231,23 @@ app.layout = html.Div([html.Div([
 ])])
 
 
-@app.callback(Output('url', 'pathname'), Input('focus', 'value'), Input('url', 'pathname'))
-def focus(val, pathname):
-    if val == "1" and not pathname.endswith("/r"):
-        return pathname.rstrip("/") + "/r"
-    elif val == "0" and pathname.endswith("/r"):
-        return pathname.rstrip("/r")
-    else:
-        return pathname
-
-@app.callback(Output('select_inst', 'value'), Output('slidey', 'value'), Input('url', 'pathname'))
+@app.callback(Output('select_inst', 'value'), Output('focus', 'value'), Output('slidey', 'value'), Input('url', 'pathname'))
 def display_page(pathname):
     path = pathname.split("/")
+    if pathname.endswith("/r"):
+        focus_return = "1"
+    else:
+        focus_return = "0"
+    
     if pathname is None or len(path) < 2:
-        return [0], "2021"
+        return [0], focus_return, "2021"
 
     oid = path[1]
     if oid.isdigit() and len(inst_data[inst_data['from_oid'] == int(oid)]) > 0:
-        return [int(oid)], "2021"
+        return [int(oid)], focus_return, "2021"
     elif oid == "institution" and len(path) > 2 and path[2] in rankings["specific"] and rankings["specific"][path[2]]["name"] in oid_lookup:
-        return oid_lookup[rankings["specific"][path[2]]["name"]], "-1"
-    return [0], "2021"
+        return oid_lookup[rankings["specific"][path[2]]["name"]], focus_return, "-1"
+    return [0], focus_return, "2021"
 
 
 # call back app that updates values corresponding to labels above
