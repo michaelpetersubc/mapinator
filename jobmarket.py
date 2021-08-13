@@ -110,6 +110,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets, title = "Ma
 
 app.layout = html.Div([html.Div([
     dcc.Location(id='url', refresh=False),
+    html.Div([
     html.H1("Mapinator: Economics Ph.D. Placement Data", style={"text-align": "center"}),
     # workathon title in count_colour
     html.H5(('Cumulative Count for Workathon : ', count),
@@ -224,6 +225,7 @@ app.layout = html.Div([html.Div([
                                   {'name': 'placement year', 'id': 'year'}],
                          style_table={'overflowY': 'auto'}),
     html.Br(),
+    ], id = "main_mapinator", style= {'display': 'block'}),
     html.Div(id = "bonus-data"),
     dcc.Markdown("---"),
     dcc.Markdown("##### Author: Amedeus Akira Dsouza, Vancouver School of Economics\n\nContributor: Jingze (Alex) Dong, Vancouver School of Economics\n\nContributor: James Yuming Yu, Vancouver School of Economics", style = {"text-align": "center"}),
@@ -231,27 +233,23 @@ app.layout = html.Div([html.Div([
 ])])
 
 
-@app.callback(Output('url', 'pathname'), Input('focus', 'value'), Input('url', 'pathname'))
-def focus(val, pathname):
-    if val == "1" and not pathname.endswith("/r"):
-        return pathname.rstrip("/") + "/r"
-    elif val == "0" and pathname.endswith("/r"):
-        return pathname.rstrip("/r")
-    else:
-        return pathname
-
-@app.callback(Output('select_inst', 'value'), Output('slidey', 'value'), Input('url', 'pathname'))
+@app.callback(Output('main_mapinator', 'style'), Output('select_inst', 'value'), Output('focus', 'value'), Output('slidey', 'value'), Input('url', 'pathname'))
 def display_page(pathname):
     path = pathname.split("/")
+    if pathname.endswith("/r"):
+        focus_return = "1"
+    else:
+        focus_return = "0"
+    
     if pathname is None or len(path) < 2:
-        return [0], "2021"
+        return {'display': 'block'}, [0], focus_return, "2021"
 
     oid = path[1]
     if oid.isdigit() and len(inst_data[inst_data['from_oid'] == int(oid)]) > 0:
-        return [int(oid)], "2021"
-    elif oid == "institution" and len(path) > 2 and path[2] in rankings["specific"] and rankings["specific"][path[2]]["name"] in oid_lookup:
-        return oid_lookup[rankings["specific"][path[2]]["name"]], "-1"
-    return [0], "2021"
+        return {'display': 'block'}, [int(oid)], focus_return, "2021"
+    elif oid in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"] and rankings["specific"][path[2]]["name"] in oid_lookup:
+        return {'display': ['block', 'none'][int(oid == "inst")]}, oid_lookup[rankings["specific"][path[2]]["name"]], focus_return, "-1"
+    return {'display': 'block'}, [0], focus_return, "2021"
 
 
 # call back app that updates values corresponding to labels above
@@ -307,7 +305,7 @@ def render_bonus(pathname, oids):
             break
     else:
         path = pathname.split("/")
-        if (path[1] == "institution" and len(path) > 2 and path[2] in rankings["specific"]):
+        if (path[1] in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"]):
             institution_id = path[2]
 
     if not institution_id:
