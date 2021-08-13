@@ -97,6 +97,8 @@ db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where
 
 ```
 
+### Top 100 Institutions (Tilburg Ranking)
+
 
 ```python
 data_pre = defaultdict(set)
@@ -145,6 +147,7 @@ ax.grid()
 ![png](top_100.png)
 
 
+### Graduates by Year: First-Time Hires
 
 ```python
 data_pre = defaultdict(int)
@@ -191,6 +194,7 @@ ax.grid()
 ![png](years_first_time.png)
 
 
+### Graduates by Year: All Hires
 
 ```python
 data_pre = defaultdict(int)
@@ -237,3 +241,31 @@ ax.grid()
 ![png](years_all.png)
 
 
+### Placement Counts: North America (ranked <100)
+
+![png](institutions_NA.png)
+
+
+### Placement Counts: South America (ranked <100)
+
+![png](institutions_SA.png)
+
+
+### Placement Counts: Europe (ranked <100)
+
+![png](institutions_EU.png)
+
+
+### Placement Counts: Africa (ranked <100)
+
+![png](institutions_AF.png)
+
+
+### Placement Counts: Asia (ranked <100)
+
+![png](institutions_AS.png)
+
+
+### Placement Counts: Oceania (ranked <100)
+
+![png](institutions_OC.png)
