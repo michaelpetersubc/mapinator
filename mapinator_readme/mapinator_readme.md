@@ -102,29 +102,35 @@ db_cursor.execute('select * from to_data t join from_data f on t.aid=f.aid where
 data_pre = defaultdict(set)
 data_all = defaultdict(set)
 var = db_cursor.fetchall()
+rankmapper = {}
 for entry in var:
-    if entry["rank"] and entry["rank"] <= 100 and entry["rank"] > 0:
+    if entry["from_institution_name"] not in rankmapper or entry["rank"] != None:
+        rankmapper[entry["from_institution_name"]] = entry["rank"]
+
+for entry in var:
+        if rankmapper[entry["from_institution_name"]] and rankmapper[entry["from_institution_name"]] <= 100 and rankmapper[entry["from_institution_name"]] > 0:
         #by institution name - multiple oid for same name
-        data_all[(entry["from_institution_name"], entry["rank"])].add(entry["aid"])
-        if "2021-07" not in str(entry["created_at"]):
-            data_pre[(entry["from_institution_name"], entry["rank"])].add(entry["aid"])
+            data_all[entry["from_institution_name"]].add(entry["aid"])
+            if "2021-07" not in str(entry["created_at"]):
+                data_pre[entry["from_institution_name"]].add(entry["aid"])
 
 fig, ax = plt.subplots(figsize = (20, 40))
 
 institutions = list(data_all.keys())
-institutions.sort(key = lambda x: x[1])
+institutions.sort(key = lambda x: rankmapper[x] if rankmapper[x] else 101)
 data_all_processed = [len(data_all[i]) for i in institutions]
 vticks = np.arange(len(institutions))
 ax.barh(vticks, data_all_processed, align = "center", color = "orange", label = "Cumulative Collected Total")
 ax.set_yticks(vticks)
-ax.set_yticklabels([i[0] for i in institutions])
+ax.set_yticklabels([i for i in institutions])
 ax.invert_yaxis()
 
 old_inst = list(data_pre.keys())
-old_inst.sort(key = lambda x: x[1])
+old_inst.sort(key = lambda x: rankmapper[x] if rankmapper[x] else 101)
 data_old_processed = [len(data_pre[i]) for i in old_inst]
 yticks = np.arange(len(old_inst))
 ax.barh(yticks, data_old_processed, align = "center", color = "blue", label = "Collected Before July 2021")
+
 
 ax.set_title("Number of Graduates with Recorded Outcomes by Institution of Graduation - Top 100 Institutions")
 ax.set_xlabel("Number of graduates with recorded outcomes")
