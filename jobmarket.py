@@ -90,7 +90,7 @@ count_colour = 'navy'
 count = 5154
 # cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
 # inst_data = inst_data.dropna(subset = cols)
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://raw.githubusercontent.com/michaelpetersubc/mapinator/master/plotly_stylesheet.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
                  sorted(set(zip(inst_data.from_shortname, inst_data.from_oid)))]  # inst_data.from_institution_name
