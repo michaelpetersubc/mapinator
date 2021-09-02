@@ -242,9 +242,13 @@ def display_page(pathname):
 
     oid = path[1]
     if oid.isdigit() and len(inst_data[inst_data['from_oid'] == int(oid)]) > 0:
-        return {'display': 'block'}, [int(oid)], [0], "2021"
+        blocks = [[int(oid)], [0]]
+        case = int(pathname.rstrip("/").endswith("/r"))
+        return {'display': 'block'}, blocks[case], blocks[1 - case], "2021"
     elif oid in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"] and rankings["specific"][path[2]]["name"] in oid_lookup:
-        return {'display': ['block', 'none'][int(oid == "inst")]}, oid_lookup[rankings["specific"][path[2]]["name"]], [0], "-1"
+        blocks = [oid_lookup[rankings["specific"][path[2]]["name"]], [0]]
+        case = int(pathname.rstrip("/").endswith("/r"))
+        return {'display': ['block', 'none'][int(oid == "inst")]}, blocks[case], blocks[1 - case], "-1"
     return {'display': 'block'}, [0], [0], "2021"
 
 
@@ -304,14 +308,18 @@ def render_bonus(pathname, oids, hiring_oids):
     for oid in oids:
         if oid in reverse_search and reverse_search[oid] in rankings["specific"] and reverse_search[oid] != "714":
             institution_id.append(reverse_search[oid])
-    if not len(institution_id):
+    if not len(institution_id) and not pathname.rstrip("/").endswith("/r"):
         path = pathname.split("/")
         if (path[1] in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"]):
-            institution_id = path[2]
+            institution_id.append(path[2])
 
     for oid in hiring_oids:
         if oid in reverse_search and reverse_search[oid] in rankings["specific"] and reverse_search[oid] != "714":
             hiring_institution_id.append(reverse_search[oid])
+    if not len(hiring_institution_id) and pathname.rstrip("/").endswith("/r"):
+        path = pathname.split("/")
+        if (path[1] in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"]):
+            hiring_institution_id.append(path[2])
 
     if not len(institution_id) and not len(hiring_institution_id):
         return []
@@ -373,7 +381,7 @@ def render_bonus(pathname, oids, hiring_oids):
         ], className = "row"),
         ]
         separator_counter += 1
-        if separator_counter < len(institution_id + hiring_institution_id):
+        if separator_counter < len(names):
             output += [dcc.Markdown("---"), dcc.Markdown("---")]
     return output
 
