@@ -69,7 +69,7 @@ def preprocess(df):
     df['rank'] = df['rank'].apply(f)
     df['to_rank'] = df['to_rank'].apply(f)
     df['year'] = df['startdate'].dt.year
-    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'year']
+    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'year']
     df['meta'] = df[columns].to_dict(orient='records')
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
@@ -140,7 +140,7 @@ app.layout = html.Div([html.Div([
                                 multi=True,
                                 placeholder="Select Applicant Institution"
                                 )],
-                  style={"width": "20%", "float": "left", "margin": "auto"}),
+                  style={"width": "25%", "float": "left", "margin": "auto"}),
          html.Div(["Hiring Institution",
                    dcc.Dropdown(id="select_inst_hiring",
                                 options=listfoo2,
@@ -148,24 +148,7 @@ app.layout = html.Div([html.Div([
                                 multi=True,
                                 placeholder="Select Hiring Institution"
                                 )],
-                  style={"width": "20%", "float": "left", "margin": "auto"}),
-         html.Div(["Primary Specialization",
-                   dcc.Dropdown(id="select_stuff",
-                                options=[{"label": "Primary Specializations - All", "value": "0"},
-                                         {"label": "Development; Growth", "value": "1"},
-                                         {"label": "Econometrics", "value": "2"},
-                                         {"label": "Finance", "value": "6"},
-                                         {"label": "Industrial Organization", "value": "7"},
-                                         {"label": "Labor; Demographic Economics", "value": "10"},
-                                         {"label": "Macroeconomics; Monetary", "value": "12"},
-                                         {"label": "Microeconomics", "value": "13"},
-                                         {"label": "Theory", "value": "15"},
-                                         {"label": "Behavioral Economics", "value": "16"},
-                                         {"label": "Political Economics", "value": "23"}],
-                                value="0",
-                                placeholder="Select Primary Specialization"
-                                )],
-                  style={"width": "20%", "float": "left", "margin": "auto"}),
+                  style={"width": "25%", "float": "left", "margin": "auto"}),
          html.Div(["Position Type",
                    dcc.Dropdown(id="select_sector",
                                 options=[
@@ -180,30 +163,13 @@ app.layout = html.Div([html.Div([
                                 value="1",
                                 placeholder="Select Position Type"
                                 )],
-                  style={"width": "20%", "float": "left", "margin": "auto"}),
-         #                        dcc.Dropdown(id = "select_sector",
-         #                                     options = [{"label": "Recruiter Types - All", "value": "0"},
-         #                                                {"label": "Academic organization (economics department)", "value": "1"},
-         #                                                {"label": "Academic organization (business school)", "value": "2"},
-         #                                                {"label": "Academic organization (agricultural/resource economics department)", "value": "3"},
-         #                                                {"label": "Academic organization (other than econ, business, or ag econ)", "value": "4"},
-         #                                                {"label": "Government agency or commission", "value": "5"},
-         #                                                {"label": "Private (for profit) business or organization", "value" : "6"},
-         #                                                {"label": "Private (non-profit) business or organization", "value": "7"},
-         #                                                {"label": "Other type of organization", "value": "8"},
-         #                                                {"label": "Advertising agency or executive recruiter", "value": "9"},
-         #                                                {"label": "Human Resources department of educational or non-profit institution", "value": "10"},
-         #                                                {"label": "Human Resources department of for-profit organization", "value": "11"},
-         #                                                {"label": "Personal", "value": "12"}],
-         #                                     value = "0",
-         #                                     placeholder = "Select a type of recruiter"
-         #                                     ),
+                  style={"width": "25%", "float": "left", "margin": "auto"}),
          html.Div(["Placement Year",
                    dcc.Dropdown(id="slidey",
                                 options=vals,
                                 value=date.today().year,
                                 placeholder="Select Year of Placement")],
-                  style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
+                  style={"width": "25%", "float": "left", "margin": "auto"})], className="row"),
     dcc.Graph(id="my_map", figure={}),
     dash_table.DataTable(id="my_cloud", page_size=10,
                          columns=[{"name": "graduated-from", "id": "from_shortname"},
@@ -246,16 +212,13 @@ def display_page(pathname):
                Output("my_cloud", "data")],
               [Input("select_inst", "value"),
                Input("select_inst_hiring", "value"),
-               Input("select_stuff", "value"),
                Input("select_sector", "value"),
                Input("slidey", "value")])
-def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val):
+def mapinator(inst_val, inst_val_hiring, sect_val, year_val):
     if not year_val:
         year_val = "-1"
     if not sect_val:
         sect_val = "0"
-    if not spec_val:
-        spec_val = "0"
     
     if inst_val == []:
         # if someone wipes all the fields, default to All
@@ -270,7 +233,6 @@ def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val):
          (inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
         ((inst_data["to_oid"].isin(inst_val_hiring)) |
          (inst_data["to_oid"] > max(inst_val_hiring) * max(inst_val_hiring) * max(inst_val_hiring))) &
-        ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
         ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
