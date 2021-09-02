@@ -69,7 +69,7 @@ def preprocess(df):
     df['rank'] = df['rank'].apply(f)
     df['to_rank'] = df['to_rank'].apply(f)
     df['year'] = df['startdate'].dt.year
-    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender', 'year']
+    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'year']
     df['meta'] = df[columns].to_dict(orient='records')
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
@@ -171,18 +171,12 @@ app.layout = html.Div([html.Div([
                                 options=[
                                     {"label": "Position Type - All", "value": "0"},
                                     {"label": "Assistant Professor", "value": "1"},
-                                    {"label": "Associate Professor", "value": "2"},
-                                    {"label": "Full Professor", "value": "3"},
-                                    {"label": "Professor (Unspecified)", "value": "4"},
                                     {"label": "Temporary Lecturer", "value": "5"},
                                     {"label": "Post-Doc", "value": "6"},
                                     {"label": "Lecturer", "value": "7"},
                                     {"label": "Consultant", "value": "8"},
                                     {"label": "Other Academic", "value": "9"},
                                     {"label": "Other Non-Academic", "value": "10"},
-                                    {"label": "Tenured Professor", "value": "11"},
-                                    {"label": "Assistant or Associate Professor", "value": "13"},
-                                    {"label": "Visiting Professor/Lecturer/Instructor",
                                      "value": "15"}],
                                 value="1",
                                 placeholder="Select Position Type"
@@ -205,20 +199,12 @@ app.layout = html.Div([html.Div([
          #                                     value = "0",
          #                                     placeholder = "Select a type of recruiter"
          #                                     ),
-         html.Div(["Women-Only Placements",
-                   dcc.Dropdown(id="women",
-                                options=[{"label": "False", "value": "0"},
-                                         {"label": "True", "value": "1"}],
-                                value="0",
-                                placeholder="Select True for Women-Only Placements"
-                                )],
-                  style={"width": "12%", "float": "left", "margin": "auto"}),
          html.Div(["Placement Year",
                    dcc.Dropdown(id="slidey",
                                 options=vals,
                                 value=date.today().year,
                                 placeholder="Select Year of Placement")],
-                  style={"width": "8%", "float": "left", "margin": "auto"})], className="row"),
+                  style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
     dcc.Graph(id="my_map", figure={}),
     dash_table.DataTable(id="my_cloud", page_size=10,
                          columns=[{"name": "graduated-from", "id": "from_shortname"},
@@ -226,7 +212,6 @@ app.layout = html.Div([html.Div([
                                   {"name": "hired-by", "id": "to_shortname"},
                                   {"name": "hired-by-rank", "id": "to_rank"},
                                   {"name": "position-type", "id": "position_name"},
-                                  {'name': 'sex', 'id': 'gender'},
                                   {'name': 'placement year', 'id': 'year'}],
                          style_table={'overflowY': 'auto'}),
     html.Br(),
@@ -264,9 +249,8 @@ def display_page(pathname):
                Input("select_inst_hiring", "value"),
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
-               Input("slidey", "value"),
-               Input('women', 'value')])
-def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val, women_val):
+               Input("slidey", "value")])
+def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val):
     if not year_val:
         year_val = "-1"
     if not sect_val:
@@ -291,8 +275,6 @@ def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val, women_val
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
         ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
-    if women_val is not None and int(women_val) == 1:
-        iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
     if -1 in inst_val:
         iterated_data = iterated_data[
             (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
