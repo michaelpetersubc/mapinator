@@ -69,7 +69,7 @@ def preprocess(df):
     df['rank'] = df['rank'].apply(f)
     df['to_rank'] = df['to_rank'].apply(f)
     df['year'] = df['startdate'].dt.year
-    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'year']
+    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'year']
     df['meta'] = df[columns].to_dict(orient='records')
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
