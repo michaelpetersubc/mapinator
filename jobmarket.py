@@ -97,6 +97,11 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 #  either via MySQL or Python conditional on server; same for to
 fooextender = listfoo.extend(listextendfoo)
 
+listfoo2 = [{"label": "To Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
+listextendfoo2 = [{"label": i, "value": j} for i, j in
+                 sorted(set(zip(inst_data.to_shortname, inst_data.to_oid)))]
+fooextender2 = listfoo2.extend(listextendfoo2)
+
 vals = []
 for yr in range(inst_data['year'].min(), inst_data['year'].max() + 1):
     vals.append({"label": yr, "value": yr})
@@ -138,7 +143,7 @@ app.layout = html.Div([html.Div([
                   style={"width": "20%", "float": "left", "margin": "auto"}),
          html.Div(["Hiring Institution",
                    dcc.Dropdown(id="select_inst_hiring",
-                                options=listfoo,
+                                options=listfoo2,
                                 value=0,  # All Inst
                                 multi=True,
                                 placeholder="Select Hiring Institution"
