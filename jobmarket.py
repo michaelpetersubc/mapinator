@@ -218,7 +218,7 @@ def mapinator(inst_val, inst_val_hiring, sect_val, year_val):
     if not year_val:
         year_val = "-1"
     if not sect_val:
-        sect_val = "0"
+        sect_val = 0
     
     if inst_val == []:
         # if someone wipes all the fields, default to All
@@ -228,12 +228,16 @@ def mapinator(inst_val, inst_val_hiring, sect_val, year_val):
         # if someone wipes all the fields, default to All
         inst_val_hiring = [0]
 
+    if int(sect_val) == 0:
+        sect_vals = [1, 5, 6, 7, 8, 9, 10]
+    else:
+        sect_vals = [int(sect_val)]
     iterated_data = inst_data.loc[
         ((inst_data["from_oid"].isin(inst_val)) |
          (inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
         ((inst_data["to_oid"].isin(inst_val_hiring)) |
          (inst_data["to_oid"] > max(inst_val_hiring) * max(inst_val_hiring) * max(inst_val_hiring))) &
-        ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
+        (inst_data["postype"] in sect_vals) &
         ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
     if -1 in inst_val:
