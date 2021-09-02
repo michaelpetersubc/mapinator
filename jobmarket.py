@@ -176,8 +176,7 @@ app.layout = html.Div([html.Div([
                                     {"label": "Lecturer", "value": "7"},
                                     {"label": "Consultant", "value": "8"},
                                     {"label": "Other Academic", "value": "9"},
-                                    {"label": "Other Non-Academic", "value": "10"},
-                                     "value": "15"}],
+                                    {"label": "Other Non-Academic", "value": "10"}],
                                 value="1",
                                 placeholder="Select Position Type"
                                 )],
