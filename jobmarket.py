@@ -290,7 +290,7 @@ def render_bonus(pathname, oids, hiring_oids):
                     html.Div([
                         html.H3(name),
                         html.H5(f"VSE-EJM Categorization: Type {my_type}"),
-                        dcc.Markdown(f"**[REPEC](https://ideas.repec.org/top/top.econdept.html)** Rank: **{data['repec']}**"),
+                        dcc.Markdown(f"**[RePEc](https://ideas.repec.org/top/top.econdept.html)** Rank: **{data['repec']}**"),
                         dcc.Markdown(f"**[Tilburg University](https://econtop.uvt.nl/rankingsandbox.php)** Rank: **{data['tilburg']}**"),
                     ], className = "four columns"),
                     html.Div([
