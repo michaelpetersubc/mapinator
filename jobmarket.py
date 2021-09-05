@@ -272,6 +272,7 @@ def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val):
          (inst_data["to_oid"] > max(inst_val_hiring) * max(inst_val_hiring) * max(inst_val_hiring))) &
         ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
+        (inst_data["postype"].isin([1, 5, 6, 7, 8, 9, 10])) &
         ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
     if -1 in inst_val:
@@ -328,7 +329,7 @@ def render_bonus(pathname, oids, hiring_oids):
                     html.Div([
                         html.H3(name),
                         html.H5(f"VSE-EJM Categorization: Type {my_type}"),
-                        dcc.Markdown(f"**[REPEC](https://ideas.repec.org/top/top.econdept.html)** Rank: **{data['repec']}**"),
+                        dcc.Markdown(f"**[RePEc](https://ideas.repec.org/top/top.econdept.html)** Rank: **{data['repec']}**"),
                         dcc.Markdown(f"**[Tilburg University](https://econtop.uvt.nl/rankingsandbox.php)** Rank: **{data['tilburg']}**"),
                     ], className = "four columns"),
                     html.Div([
