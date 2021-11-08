@@ -69,7 +69,7 @@ def preprocess(df):
     df['rank'] = df['rank'].apply(f)
     df['to_rank'] = df['to_rank'].apply(f)
     df['year'] = df['startdate'].dt.year
-    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'gender', 'year']
+    columns = ['from_shortname', 'rank', 'to_shortname', 'to_rank', 'position_name', 'year']
     df['meta'] = df[columns].to_dict(orient='records')
     df['from_uni'] = df['from_shortname'] + '<br>' + df['rank']
     df['to_uni'] = df['to_shortname'] + '<br>' + df['to_rank']
@@ -87,10 +87,8 @@ displaydate = datetime(2021, 7, 2)
 workathondate = displaydate - timedelta(hours=8)
 workathonend = displaydate + timedelta(days=3) + timedelta(hours=8)
 count_colour = 'navy'
-count = 5154
 # cols = ['longitude', 'latitude', 'to_longitude', 'to_latitude']
 # inst_data = inst_data.dropna(subset = cols)
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 listfoo = [{"label": "From Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
 listextendfoo = [{"label": i, "value": j} for i, j in
                  sorted(set(zip(inst_data.from_shortname, inst_data.from_oid)))]  # inst_data.from_institution_name
@@ -99,6 +97,11 @@ listextendfoo = [{"label": i, "value": j} for i, j in
 #  either via MySQL or Python conditional on server; same for to
 fooextender = listfoo.extend(listextendfoo)
 
+listfoo2 = [{"label": "To Institutions - All", "value": 0}, {"label": "Workathon 2021", "value": -1}]
+listextendfoo2 = [{"label": i, "value": j} for i, j in
+                 sorted(set(zip(inst_data.to_shortname, inst_data.to_oid)))]
+fooextender2 = listfoo2.extend(listextendfoo2)
+
 vals = []
 for yr in range(inst_data['year'].min(), inst_data['year'].max() + 1):
     vals.append({"label": yr, "value": yr})
@@ -106,14 +109,17 @@ vals.append({'label': 'All Years', 'value': '-1'})
 vals.reverse()
 app_server = Flask(__name__)
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets, title = "Mapinator")
+app = dash.Dash(__name__, title = "Mapinator")
 
 app.layout = html.Div([html.Div([
     dcc.Location(id='url', refresh=False),
+    html.Div([
     html.H1("Mapinator: Economics Ph.D. Placement Data", style={"text-align": "center"}),
     # workathon title in count_colour
-    html.H5(('Cumulative Count for Workathon : ', count),
+    html.H5(('Workathon 2021 Total: 5154'),
             # href='https://w4s-2021.github.io/',
+            style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
+    html.H5(('Workathon 2020 Total: 3071'),
             style={'text-align': 'center', 'color': count_colour, "margin": "auto"}),
     html.Div(
         [
@@ -133,6 +139,14 @@ app.layout = html.Div([html.Div([
                                 value=0,  # All Inst
                                 multi=True,
                                 placeholder="Select Applicant Institution"
+                                )],
+                  style={"width": "20%", "float": "left", "margin": "auto"}),
+         html.Div(["Hiring Institution",
+                   dcc.Dropdown(id="select_inst_hiring",
+                                options=listfoo2,
+                                value=0,  # All Inst
+                                multi=True,
+                                placeholder="Select Hiring Institution"
                                 )],
                   style={"width": "20%", "float": "left", "margin": "auto"}),
          html.Div(["Primary Specialization",
@@ -157,19 +171,12 @@ app.layout = html.Div([html.Div([
                                 options=[
                                     {"label": "Position Type - All", "value": "0"},
                                     {"label": "Assistant Professor", "value": "1"},
-                                    {"label": "Associate Professor", "value": "2"},
-                                    {"label": "Full Professor", "value": "3"},
-                                    {"label": "Professor (Unspecified)", "value": "4"},
                                     {"label": "Temporary Lecturer", "value": "5"},
                                     {"label": "Post-Doc", "value": "6"},
                                     {"label": "Lecturer", "value": "7"},
                                     {"label": "Consultant", "value": "8"},
                                     {"label": "Other Academic", "value": "9"},
-                                    {"label": "Other Non-Academic", "value": "10"},
-                                    {"label": "Tenured Professor", "value": "11"},
-                                    {"label": "Assistant or Associate Professor", "value": "13"},
-                                    {"label": "Visiting Professor/Lecturer/Instructor",
-                                     "value": "15"}],
+                                    {"label": "Other Non-Academic", "value": "10"}],
                                 value="1",
                                 placeholder="Select Position Type"
                                 )],
@@ -191,28 +198,12 @@ app.layout = html.Div([html.Div([
          #                                     value = "0",
          #                                     placeholder = "Select a type of recruiter"
          #                                     ),
-         html.Div(["Women-Only Placements",
-                   dcc.Dropdown(id="women",
-                                options=[{"label": "False", "value": "0"},
-                                         {"label": "True", "value": "1"}],
-                                value="0",
-                                placeholder="Select True for Women-Only Placements"
-                                )],
-                  style={"width": "20%", "float": "left", "margin": "auto"}),
          html.Div(["Placement Year",
                    dcc.Dropdown(id="slidey",
                                 options=vals,
                                 value=date.today().year,
                                 placeholder="Select Year of Placement")],
-                  style={"width": "10%", "float": "left", "margin": "auto"}),
-        html.Div(["Applicant Focus",
-                   dcc.Dropdown(id="focus",
-                                options=[{"label": "Graduates", "value": "0"},
-                                         {"label": "Hires", "value": "1"}],
-                                value="0",
-                                placeholder="Select Focus for Applicants"
-                                )],
-                  style={"width": "10%", "float": "left", "margin": "auto"})], className="row"),
+                  style={"width": "20%", "float": "left", "margin": "auto"})], className="row"),
     dcc.Graph(id="my_map", figure={}),
     dash_table.DataTable(id="my_cloud", page_size=10,
                          columns=[{"name": "graduated-from", "id": "from_shortname"},
@@ -220,10 +211,10 @@ app.layout = html.Div([html.Div([
                                   {"name": "hired-by", "id": "to_shortname"},
                                   {"name": "hired-by-rank", "id": "to_rank"},
                                   {"name": "position-type", "id": "position_name"},
-                                  {'name': 'sex', 'id': 'gender'},
                                   {'name': 'placement year', 'id': 'year'}],
                          style_table={'overflowY': 'auto'}),
     html.Br(),
+    ], id = "main_mapinator", style= {'display': 'block'}),
     html.Div(id = "bonus-data"),
     dcc.Markdown("---"),
     dcc.Markdown("##### Author: Amedeus Akira Dsouza, Vancouver School of Economics\n\nContributor: Jingze (Alex) Dong, Vancouver School of Economics\n\nContributor: James Yuming Yu, Vancouver School of Economics", style = {"text-align": "center"}),
@@ -231,39 +222,34 @@ app.layout = html.Div([html.Div([
 ])])
 
 
-@app.callback(Output('url', 'pathname'), Input('focus', 'value'), Input('url', 'pathname'))
-def focus(val, pathname):
-    if val == "1" and not pathname.endswith("/r"):
-        return pathname.rstrip("/") + "/r"
-    elif val == "0" and pathname.endswith("/r"):
-        return pathname.rstrip("/r")
-    else:
-        return pathname
-
-@app.callback(Output('select_inst', 'value'), Output('slidey', 'value'), Input('url', 'pathname'))
+@app.callback(Output('main_mapinator', 'style'), Output('select_inst', 'value'), Output('select_inst_hiring', 'value'),Output('slidey', 'value'), Input('url', 'pathname'))
 def display_page(pathname):
     path = pathname.split("/")
+    
     if pathname is None or len(path) < 2:
-        return [0], "2021"
+        return {'display': 'block'}, [0], [0], "2021"
 
     oid = path[1]
     if oid.isdigit() and len(inst_data[inst_data['from_oid'] == int(oid)]) > 0:
-        return [int(oid)], "2021"
-    elif oid == "institution" and len(path) > 2 and path[2] in rankings["specific"] and rankings["specific"][path[2]]["name"] in oid_lookup:
-        return oid_lookup[rankings["specific"][path[2]]["name"]], "-1"
-    return [0], "2021"
+        blocks = [[int(oid)], [0]]
+        case = int(pathname.rstrip("/").endswith("/r"))
+        return {'display': 'block'}, blocks[case], blocks[1 - case], "2021"
+    elif oid in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"] and rankings["specific"][path[2]]["name"] in oid_lookup:
+        blocks = [oid_lookup[rankings["specific"][path[2]]["name"]], [0]]
+        case = int(pathname.rstrip("/").endswith("/r"))
+        return {'display': ['block', 'none'][int(oid == "inst")]}, blocks[case], blocks[1 - case], "-1"
+    return {'display': 'block'}, [0], [0], "2021"
 
 
 # call back app that updates values corresponding to labels above
 @app.callback([Output("my_map", "figure"),
                Output("my_cloud", "data")],
               [Input("select_inst", "value"),
+               Input("select_inst_hiring", "value"),
                Input("select_stuff", "value"),
                Input("select_sector", "value"),
-               Input("slidey", "value"),
-               Input('women', 'value'), 
-               Input('url', 'pathname')])
-def mapinator(inst_val, spec_val, sect_val, year_val, women_val, pathname):
+               Input("slidey", "value")])
+def mapinator(inst_val, inst_val_hiring, spec_val, sect_val, year_val):
     if not year_val:
         year_val = "-1"
     if not sect_val:
@@ -275,16 +261,20 @@ def mapinator(inst_val, spec_val, sect_val, year_val, women_val, pathname):
         # if someone wipes all the fields, default to All
         inst_val = [0]
 
-    selection = ["from_oid", "to_oid"][int(pathname.endswith("/r"))]
+    if inst_val_hiring == []:
+        # if someone wipes all the fields, default to All
+        inst_val_hiring = [0]
+
     iterated_data = inst_data.loc[
-        ((inst_data[selection].isin(inst_val)) |
-         (inst_data[selection] > max(inst_val) * max(inst_val) * max(inst_val))) &
+        ((inst_data["from_oid"].isin(inst_val)) |
+         (inst_data["from_oid"] > max(inst_val) * max(inst_val) * max(inst_val))) &
+        ((inst_data["to_oid"].isin(inst_val_hiring)) |
+         (inst_data["to_oid"] > max(inst_val_hiring) * max(inst_val_hiring) * max(inst_val_hiring))) &
         ((inst_data["category_id"] == int(spec_val)) | (inst_data["category_id"] > int(spec_val) * 400)) &
         ((inst_data["postype"] == int(sect_val)) | (inst_data["postype"] > int(sect_val) * 40)) &
+        (inst_data["postype"].isin([1, 5, 6, 7, 8, 9, 10])) &
         ((inst_data['startdate'].dt.year == int(year_val)) | (-1 == int(year_val)))]
 
-    if women_val is not None and int(women_val) == 1:
-        iterated_data = iterated_data[(iterated_data['gender'] == 'Female')]
     if -1 in inst_val:
         iterated_data = iterated_data[
             (iterated_data['created_at'] >= workathondate) & (iterated_data['created_at'] <= workathonend)]
@@ -298,77 +288,89 @@ def mapinator(inst_val, spec_val, sect_val, year_val, women_val, pathname):
 
     return fig, table_data
 
-@app.callback(Output('bonus-data', 'children'), Input('url', 'pathname'), Input('select_inst', 'value'))
-def render_bonus(pathname, oids):
-    institution_id = None
+@app.callback(Output('bonus-data', 'children'), Input('url', 'pathname'), Input('select_inst', 'value'), Input('select_inst_hiring', 'value'))
+def render_bonus(pathname, oids, hiring_oids):
+    institution_id = []
+    hiring_institution_id = []
     for oid in oids:
         if oid in reverse_search and reverse_search[oid] in rankings["specific"] and reverse_search[oid] != "714":
-            institution_id = reverse_search[oid]
-            break
-    else:
+            institution_id.append(reverse_search[oid])
+    if not len(institution_id) and not pathname.rstrip("/").endswith("/r"):
         path = pathname.split("/")
-        if (path[1] == "institution" and len(path) > 2 and path[2] in rankings["specific"]):
-            institution_id = path[2]
+        if (path[1] in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"]):
+            institution_id.append(path[2])
 
-    if not institution_id:
+    for oid in hiring_oids:
+        if oid in reverse_search and reverse_search[oid] in rankings["specific"] and reverse_search[oid] != "714":
+            hiring_institution_id.append(reverse_search[oid])
+    if not len(hiring_institution_id) and pathname.rstrip("/").endswith("/r"):
+        path = pathname.split("/")
+        if (path[1] in ["institution", "inst"] and len(path) > 2 and path[2] in rankings["specific"]):
+            hiring_institution_id.append(path[2])
+
+    if not len(institution_id) and not len(hiring_institution_id):
         return []
 
-    data = rankings["specific"][institution_id]
-    name = data["name"]
-    my_type = data['vse-ejm']
-    top_outbound = data["top_three_to"]
-    top_inbound = data["top_three_from"]
-    labels = ["Type 1", "Type 2", "Type 3", "Type 4", "Non-Professor Academic Positions", "Government", "Private Sector", "Teaching Institutions"]
-    newline = '\n\n'
-    return [html.Div([
-        html.Div([html.Br()], className = "one column"),   
+    output = []
+    separator_counter = 0
+    names = [(item, rankings["specific"][item]["name"]) for item in list(set(institution_id + hiring_institution_id))]
+    names.sort(key = lambda x: x[1])
+    for item, name in names:
+        data = rankings["specific"][item]
+        my_type = data['vse-ejm']
+        top_outbound = data["top_three_to"]
+        top_inbound = data["top_three_from"]
+        labels = ["Type 1", "Type 2", "Type 3", "Type 4", "Non-Professor Academic Positions", "Government", "Private Sector", "Teaching Institutions"]
+        newline = '\n\n'
+        output += [html.Div([
+            html.Div([html.Br()], className = "one column"),   
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.H3(name),
+                        html.H5(f"VSE-EJM Categorization: Type {my_type}"),
+                        dcc.Markdown(f"**[RePEc](https://ideas.repec.org/top/top.econdept.html)** Rank: **{data['repec']}**"),
+                        dcc.Markdown(f"**[Tilburg University](https://econtop.uvt.nl/rankingsandbox.php)** Rank: **{data['tilburg']}**"),
+                    ], className = "four columns"),
+                    html.Div([
+                        html.H5(f"Top Three institutions where graduates from here are hired:"),
+                        dcc.Markdown("\n\n".join(top_outbound))
+                    ], className = "four columns"),
+                    html.Div([
+                        html.H5(f"Top Three institutions this institution hires graduates from:"),
+                        dcc.Markdown("\n\n".join(top_inbound))
+                    ], className = "four columns"),
+                ], className = "row"),
+                dcc.Markdown("---"),
+            ], className = "ten columns"),
+            html.Div([html.Br()], className = "one column"),   
+        ], className = "row"),
         html.Div([
-            html.Div([
+            html.Div([html.Br()], className = "two columns"),   
+            html.Div([ 
+                html.H3(f"Specific Metrics for {name}", style = {"text-align": "center"}),
                 html.Div([
-                    html.H3(name),
-                    html.H5(f"VSE-EJM Categorization: Type {my_type}"),
-                    dcc.Markdown(f"**[REPEC](https://ideas.repec.org/top/top.econdept.html)** Rank: **{data['repec']}**"),
-                    dcc.Markdown(f"**[Tilburg University](https://econtop.uvt.nl/rankingsandbox.php)** Rank: **{data['tilburg']}**"),
-                ], className = "four columns"),
+                    dcc.Markdown(f"#### Total Placements from {name} to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in data['total_placements_to']])])}", className = "six columns"),
+                    dcc.Markdown(f"#### Average Placements from a generic Type {my_type} institution to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['average_to']])])}", className = "six columns"),
+                ], className = "row"),
+                dcc.Markdown("---"),
                 html.Div([
-                    html.H5(f"Top Three institutions where graduates from here are hired:"),
-                    dcc.Markdown("\n\n".join(top_outbound))
-                ], className = "four columns"),
-                html.Div([
-                    html.H5(f"Top Three institutions this institution hires graduates from:"),
-                    dcc.Markdown("\n\n".join(top_inbound))
-                ], className = "four columns"),
-            ], className = "row"),
-            dcc.Markdown("---"),
-        ], className = "ten columns"),
-        html.Div([html.Br()], className = "one column"),   
-    ], className = "row"),
-    html.Div([
-        html.Div([html.Br()], className = "two columns"),   
-        html.Div([ 
-            html.H3(f"Specific Metrics for {name}", style = {"text-align": "center"}),
-            html.Div([
-                dcc.Markdown(f"#### Total Placements from {name} to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in data['total_placements_to']])])}", className = "six columns"),
-                dcc.Markdown(f"#### Average Placements from a generic Type {my_type} institution to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['average_to']])])}", className = "six columns"),
-            ], className = "row"),
-            dcc.Markdown(f"###### Normalized Likelihood of placements given average: {data['likelihood_to']}"),
-            dcc.Markdown(f"#### Sample Variance in Placements from Type {my_type} to:\n{newline.join([': '.join(b) for b in zip(labels, [str(round(a, 2)) for a in rankings['generic'][my_type - 1]['variance_to']])])}", style = {"text-align": "center"}),
-            dcc.Markdown("---"),
-            html.Div([
-                dcc.Markdown(f"#### Total Placements to {name} from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in data['total_placements_from']])])}", className = "six columns"),
-                dcc.Markdown(f"#### Average Placements to a generic Type {my_type} institution from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['average_from']])])}", className = "six columns"),
-            ], className = "row"),
-            dcc.Markdown(f"###### Normalized Likelihood of placements given average: {data['likelihood_from']}"),
-            dcc.Markdown(f"#### Sample Variance in Placements to Type {my_type} from:\n{newline.join([': '.join(b) for b in zip(labels, [str(round(a, 2)) for a in rankings['generic'][my_type - 1]['variance_from']])])}", style = {"text-align": "center"}),
-            dcc.Markdown("---"),
-            html.H3(f"General Metrics for Type {my_type}", style = {"text-align": "center"}),
-            dcc.Markdown(f"#### Total Placements from all Type {my_type} institutions to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['total_to']])])}"),
-            dcc.Markdown("---"),
-            dcc.Markdown(f"#### Total Placements to all Type {my_type} institutions from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['total_from']])])}"),
-        ], className = "eight columns"),
-        html.Div([html.Br()], className = "two column"),   
-    ], className = "row"),
-    ]
+                    dcc.Markdown(f"#### Total Placements to {name} from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in data['total_placements_from']])])}", className = "six columns"),
+                    dcc.Markdown(f"#### Average Placements to a generic Type {my_type} institution from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['average_from']])])}", className = "six columns"),
+                ], className = "row"),
+                dcc.Markdown("---"),
+                html.H3(f"General Metrics for Type {my_type}", style = {"text-align": "center"}),
+                dcc.Markdown(f"#### Total Placements from all Type {my_type} institutions to:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['total_to']])])}"),
+                dcc.Markdown("---"),
+                dcc.Markdown(f"#### Total Placements to all Type {my_type} institutions from:\n{newline.join([': '.join(b) for b in zip(labels, [str(a) for a in rankings['generic'][my_type - 1]['total_from']])])}"),
+            ], className = "eight columns"),
+            html.Div([html.Br()], className = "two column"),   
+        ], className = "row"),
+        ]
+        separator_counter += 1
+        if separator_counter < len(names):
+            output += [dcc.Markdown("---"), dcc.Markdown("---")]
+    return output
 
 
 
