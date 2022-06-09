@@ -4,10 +4,10 @@ May 31, 2022
 # EJM Button
 
 ## Description
-This tool enables you to quickly search for the job placement outcomes of economics PhD graduates in the econjobmarket.org database. It automatically launches the site support.econjobmarket.org with three different candidate pages, along with corresponding web search tabs for their CVs. The script was originally written by Kieran Weaver, and was modified by Jonah Heyl.
+This tool enables you to quickly search for the job placement outcomes of economics PhD graduates in the econjobmarket.org database. It automatically launches the site https://support.econjobmarket.org with three different candidate pages, along with corresponding web search tabs for their CVs. The script was originally written by Kieran Weaver, and was modified by Jonah Heyl.
 
 ## Prerequisites
-You must be logged into your account on support.econjobmarket.org before using this tool. As well, you must have Python installed on your computer.
+You must be logged into your account on https://support.econjobmarket.org before using this tool. As well, you must have Python installed on your computer.
 
 ## Downloading the File
 1. Go to https://github.com/Jonah-Heyl/EJM_button.
@@ -19,8 +19,8 @@ You must be logged into your account on support.econjobmarket.org before using t
 2. Type in `python button_0.py`, then hit enter.
 *Note that you will be prompted to install the Requests library if it is not already on your computer. To install, type in `pip install requests`, then hit enter.
 3. A new window will appear with a button that says "Add slice". Click this button. 
-4. In the Terminal window, you will be prompted to enter the username for your account on support.econjobmarket.org. Type it in, then hit enter.
-5. You will then be prompted to enter the password for your account at support.econjobmarket.org. Type it in, then hit enter.
+4. In the Terminal window, you will be prompted to enter the username for your account on https://support.econjobmarket.org. Type it in, then hit enter.
+5. You will then be prompted to enter the password for your account at https://support.econjobmarket.org. Type it in, then hit enter.
 6. Three tabs with candidate pages on the EJM support site will launch in your web browser, along with three web search tabs for the candidates' CVs. 
 
 Once logged in, the script will create a file called "user.dat", which will be saved on your computer. This file stores your login credentials, as well as the latest access token. If you delete this file, you will be prompted to log in again once your access token expires. 
