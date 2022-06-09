@@ -1,3 +1,5 @@
+#### Script originally written by Kieran Weaver
+#### This version Jonah Heyl June 9 2022
 import webbrowser as wb 
 from tkinter import *
 import os
