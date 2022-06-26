@@ -45,19 +45,29 @@ to fetch the access_tokens that are needed to get the information.
  
 A couple of programs are included to help you if you have secure access to the data.  Currently there is a python program that will fetch an access token called `get_token.ipynb` and a julia program called `get_data.ipynb` that will use the access token to fetch the data you want.  Each of these is designed to be used in a jupyter notebook.  They will easily adapt to command line programs or visual basic scripts, whatever you like to use.
 
-Both rely on the same .env file that needs to be stored in the directory where the scripts are running.  The .env looks like this before you run the `get_token.ipynb` script:
+Both rely on the same .env file that needs to be stored in the directory where the scripts are running.  If you are using the code to get
+data from the econjobmarket api, the .env looks like this before you run the `get_token.ipynb` script:
 
 ```
+token_url=https://support.econjobmarket.org/oauth2/token
+api_url=https://support.econjobmarket.org/api
+client_key=support_token_server
+client_secret=4support_server2work
 username=your_username_at_support.econjobmarket.org
 password=your_password_at_support.econjobmarket.org
 access_token=
 refresh_token=
 ```
 
+Of course, you'll need to use your actual username and password above.
 
 It will look like this after you run the get_token script
 
 ```
+token_url=https://support.econjobmarket.org/oauth2/token
+api_url=https://support.econjobmarket.org/api
+client_key=support_token_server
+client_secret=4support_server2work
 username=your_username_at_support.econjobmarket.org
 password=your_password_at_support.econjobmarket.org
 access_token='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpZCI6IjE0MzU3NThhZDJiNjJiNmUwNTkwZWYwMTg1Y2NkMmY5MTFjNjJkNzAiLCJqdGkiOiIxNDM1NzU4YWQyYjYyYjZlMDU5MGVmMDE4NWNjZDJmOTExYzYyZDcwIiwiaXNzIjoiaHR0cHM6XC9cL3N1cHBvcnQuZWNvbmpvYm1hcmtldC5vcmdcLyIsImF1ZCI6InN1cHBvcnRfdG9rZW5fc2VydmVyIiwic3ViIjoiNiIsImi4cCI6MTY1NjAxMTU3MywiaWF0IjoxNjU2MDA3OTczLCJ0b2tlbl90eXBlIjoiYmVhcmVyIiwic2NvcGUiOiJiYXNpYyJ9.JuEZI2GyZzf6aMCsvOLg3eeEXRMIZ9pRjbtXY2UxCFBYTejd1fCEvHNBiQ4bZeAUS2AYjLztiKD_HBOgvFsEChqbzwCckZg0cjoc6Y8sGH-g1XFdIRcedrcOKavWuA5WAHZ351wTwWrmsMw10DhT8h_6gntZhXvtg4Si9JL6neUZ6tuHgcidkTj4xcuGQs3bTd9d2_oc_XvSp5PFdxRj-cr_8LPDuvQd6xlcDEIxqQKCLEJIcGCoJGJZk8VRgIi0-yPdq-cWxb4DVvVYSjfe8BwnJXpLbLlWAZ-ZMRllJtrIftzomAQM_quNEsIHZY6l8AseEGkyOjV5q4wY6DYbmQ'
