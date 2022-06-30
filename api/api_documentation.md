@@ -43,10 +43,17 @@ to fetch the access_tokens that are needed to get the information.
 
 ## Software
  
-A couple of programs are included to help you if you have secure access to the data.  Currently there is a python program that will fetch an access token called `get_token.ipynb` and a julia program called `get_data.ipynb` that will use the access token to fetch the data you want.  Each of these is designed to be used in a jupyter notebook.  They will easily adapt to command line programs or visual basic scripts, whatever you like to use.
+A couple of programs are included to help you if you have secure access to the data.  You can also use the function to retrieve unsecured data.
+
+Currently there is a python program called `get_token.ipynb` which includes a function that will fetch a new access token, a function that will use the new
+token to fetch data from the api, and an illustration how to add the data to a pandas dataframe. 
+
+There is also  a julia program called `get_data.ipynb` that will use an access token access stored as an environment variable to fetch secured data.  To
+use this function you'll need to use the python function (in a separate worksheet) to renew the access token in your environment.
+Each of these is designed to be used in a jupyter notebook.  They will easily adapt to command line programs or visual basic scripts, whatever you like to use.
 
 Both rely on the same .env file that needs to be stored in the directory where the scripts are running.  If you are using the code to get
-data from the econjobmarket api, the .env looks like this before you run the `get_token.ipynb` script:
+data from the support.econjobmarket.org api, the .env should look like this before you run the `get_token.ipynb` script:
 
 ```
 token_url=https://support.econjobmarket.org/oauth2/token
@@ -59,9 +66,9 @@ access_token=
 refresh_token=
 ```
 
-Of course, you'll need to use your actual username and password above.
+Of course, you'll need to use your actual username and password above.  The username and passwords are the ones you use to access the support.econjobmarket.org site.
 
-It will look like this after you run the get_token script
+The file `.env` should look like this after you run the get_token script:
 
 ```
 token_url=https://support.econjobmarket.org/oauth2/token
