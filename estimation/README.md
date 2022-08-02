@@ -20,7 +20,7 @@ As a side bonus, the termination procedure of waiting until 30,000 reallocations
 
 There are two early-stopping improvements which allow the algorithm to spend less time on redundant calculations:
 
-#### Seach Thread Termination
+#### Search Thread Termination
 
 The first is an early-stopping procedure in the search threads. Given that the likelihood computation is now more efficient, it has become viable to conduct a thorough validation of the existence of further likelihood improvements after a certain period of search time.
 
