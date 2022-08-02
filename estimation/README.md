@@ -94,7 +94,7 @@ $$\sum\limits_{i = 1}^{M}\sum\limits_{j = 1}^{N} \lambda_{t_i, t_j} = \sum\limit
 
 which is just the sum of all the entries of $A$, which is a constant independent of any $\lambda$ variable. Thus, this term can also be dropped from the likelihood function and we are left with:
 
-$$log(\mathcal{\tilde \tilde L}(\lambda_{t_i, t_j, \forall i, j})) = \sum\limits_{i = 1}^{M}\sum\limits_{j = 1}^{N} \hat A_{i, j} log(\lambda_{t_i, t_j})$$
+$$log(\mathcal{\tilde{\tilde L}}(\lambda_{t_i, t_j, \forall i, j})) = \sum\limits_{i = 1}^{M}\sum\limits_{j = 1}^{N} \hat A_{i, j} log(\lambda_{t_i, t_j})$$
 
 Finally, the algorithm itself keeps track of the numerator of $\lambda_{t_i, t_j}$ as a separate variable for efficiency purposes. Define:
 
@@ -108,7 +108,7 @@ $$\sum\limits_{a = 1}^{K}\sum\limits_{b = 1}^{K+1}\sum\limits_{i = 1, t_i = a}^{
 
 Which then simplifies to the following given that $log(\lambda_{a, b})$ is independent of $i$ and $j$ and can thus move outside of the rightmost two sums:
 
-$$log(\mathcal{\tilde \tilde \tilde L}(\lambda_{t_i, t_j, \forall i, j})) \sum\limits_{a = 1}^{K}\sum\limits_{b = 1}^{K+1} T_{a,b} log(\frac{T_{a,b}}{M_a N_b})$$
+$$log(\mathcal{\tilde{\tilde{\tilde L}}}(\lambda_{t_i, t_j, \forall i, j})) \sum\limits_{a = 1}^{K}\sum\limits_{b = 1}^{K+1} T_{a,b} log(\frac{T_{a,b}}{M_a N_b})$$
 
 This is the setup in use in the current version of the algorithm.
 
