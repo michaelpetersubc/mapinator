@@ -80,6 +80,7 @@ function search(channel, index, global_allocation::Array{Int32}, sample::Matrix{
                 # EARLY STOP: if no improvements are impossible at all, stop the sampler 
                 blankcount += 1
                 if blankcount % 500 == 0
+                    return
                     found = false
                     for i in 1:n, tier in 1:num
                         @inbounds original = current_allocation[i]
@@ -155,10 +156,12 @@ end
 
 function bucket_extract(assign, A::Matrix{Int32}, num)
     T = zeros(Int32, num + 1, num)
+    count = zeros(Int32, num + 1, num)
     for i in 1:size(A)[1], j in 1:size(A)[2]
             @inbounds T[(num + 1) * (assign[j] - 1) + assign[i]] += A[i, j]
+            @inbounds count[(num + 1) * (assign[j] - 1) + assign[i]] += 1
     end
-    return T
+    return T, count
 end
 
 function main()
@@ -258,7 +261,7 @@ function main()
     end
 
 
-    est_mat = bucket_extract(est_alloc, out, NUMBER_OF_TYPES)
+    est_mat, est_count = bucket_extract(est_alloc, out, NUMBER_OF_TYPES)
     M = est_mat
     open("est_mat1.json","w") do f
         write(f,JSON.string(est_mat))
@@ -266,6 +269,7 @@ function main()
 
     # the new placements matrix
     placement_rates = zeros(Int32, (NUMBER_OF_TYPES + 1, NUMBER_OF_TYPES))
+    new_counts = zeros(Int32, (NUMBER_OF_TYPES + 1, NUMBER_OF_TYPES))
     #row sums in the estimated matrix
     ovector = sum(M, dims=1)
     # row sums reordered highest to lowest
@@ -288,12 +292,14 @@ function main()
     for i in 1:NUMBER_OF_TYPES
         for j in 1:NUMBER_OF_TYPES
             placement_rates[o[i],o[j]] = M[i,j]
+            new_counts[o[i],o[j]] = est_count[i,j]
         end
     end
     #shuffle the cells for tier to sink placements (separate since sink row indices don't change)
     for i in NUMBER_OF_TYPES+1:NUMBER_OF_TYPES+1
         for j in 1:NUMBER_OF_TYPES
             placement_rates[i,o[j]] = M[i,j]
+            new_counts[i,o[j]] = est_count[i,j]
         end
     end
 
@@ -306,6 +312,9 @@ function main()
     end
     open("est_mat2.json","w") do f
         write(f,JSON.string(placement_rates))
+    end 
+    open("est_lambda.json","w") do f
+        write(f,JSON.string(placement_rates ./ new_counts))
     end 
     println("Check Complete")
 end
