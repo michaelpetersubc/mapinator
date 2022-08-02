@@ -1,5 +1,7 @@
 ## Accelerated SBM Sampler
 
+Run the script using `julia --project -e 'using Pkg; Pkg.instantiate()'` followed by `julia --project --threads auto -O3 type_allocation.jl`.
+
 The accelerated sampler in `type_allocation.jl` combines several optimizations for the original SBM procedure. These can be grouped into three categories:
 
 ### Parallelization
