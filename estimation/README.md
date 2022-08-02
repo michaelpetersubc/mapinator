@@ -110,5 +110,11 @@ Which then simplifies to the following given that $log(\lambda_{a, b})$ is indep
 
 $$log(\mathcal{\tilde{\tilde{\tilde L}}}(\lambda_{t_i, t_j, \forall i, j})) \sum\limits_{a = 1}^{K}\sum\limits_{b = 1}^{K+1} T_{a,b} log(\frac{T_{a,b}}{M_a N_b})$$
 
-This is the setup in use in the current version of the algorithm.
+This is the setup in use in the current version of the algorithm. Given that $K$ is much smaller than $M$ or $N$, this transformed version of the likelihood takes significantly less time to compute than the original.
+
+As an aside, we can use log rules to get the following:
+
+$$log(\prod\limits_{a = 1}^K \prod\limits_{b = 1}^{K+1} \lambda_{a,b}^{T_{a,b}})$$
+
+which shows that the objective function is actually just the product of the means corresponding to every placement in $A$, since $T_{a,b}$ is the number of total placements in $A$ that go from type $a$ to type $b$ departments.
 
