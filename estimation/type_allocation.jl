@@ -80,7 +80,6 @@ function search(channel, index, global_allocation::Array{Int32}, sample::Matrix{
                 # EARLY STOP: if no improvements are impossible at all, stop the sampler 
                 blankcount += 1
                 if blankcount % 500 == 0
-                    return
                     found = false
                     for i in 1:n, tier in 1:num
                         @inbounds original = current_allocation[i]
