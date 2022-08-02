@@ -118,3 +118,4 @@ $$log(\prod\limits_{a = 1}^K \prod\limits_{b = 1}^{K+1} \lambda_{a,b}^{T_{a,b}})
 
 which shows that the objective function is actually just the product of the means corresponding to every placement in $A$, since $T_{a,b}$ is the number of total placements in $A$ that go from type $a$ to type $b$ departments.
 
+If we look at the original product of Poisson PMFs which forms the likelihood, that result is what occurs when one takes that PMF, removes the denominator (which was proven constant), removes the exponential term (also proven constant) and merges common $\lambda$ variables via the $A_{i,j}$ exponents, given that $T_{a,b}$ is the sum of placements in $A_{i,j}$ with common $t_i$ and $t_j$ types.
