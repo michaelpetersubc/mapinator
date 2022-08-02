@@ -36,7 +36,7 @@ Currently this procedure is done redundantly on all search threads at once, as t
 
 The likelihood function updates by sequentially adding the likelihood of each individual department-department pair. Our objective function declares an improvement only if the result of the procedure is less than the previous best objective value.
 
-As the update is sequential, if at an intermediate point in time the accumulated likelihood is already greater than the objective function, then it will be impossible for it to be better than the previous result by the time it is finished computation. Thus, the function can end early and report no improvement.
+As the update is sequential, if at an intermediate point in time the accumulated likelihood is already greater than the previous best objective function result, then it will be impossible for it to be better than the previous result by the time it is finished computation. Thus, the function can end early and report no improvement.
 
 ### Likelihood Function Unrolling
 
