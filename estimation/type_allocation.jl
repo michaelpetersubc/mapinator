@@ -1,16 +1,5 @@
-"""
-Accelerated SBM Sampler
-James Yuming Yu, 1 August 2022
-with optimizations by Jonah Heyl and Kieran Weaver
-"""
-
-using Distributions
 using JSON
-using FLoops
 using Random
-using SpecialFunctions
-using Base.Threads
-using Base.Iterators
 
 function bucket_estimate(assign::Array{Int32}, A::Matrix{Int32}, T::Array{Float64}, count::Array{Float64}, cur_objective, num)
     @inbounds T .= 0.0
@@ -38,84 +27,13 @@ function bucket_estimate(assign::Array{Int32}, A::Matrix{Int32}, T::Array{Float6
     return -L
 end
 
-function search(channel, index, global_allocation::Array{Int32}, sample::Matrix{Int32}, flips, state, n, num)
-    try
-        current_allocation = Array{Int32}(undef, length(global_allocation))
-        @inbounds current_allocation .= global_allocation # local copy to avoid race conditions
-        @inbounds cur_objective = state[1]
-        T = zeros(Float64, num + 1, num)
-        count = zeros(Float64, num + 1, num)
-        spacer = n ÷ (nthreads()-1)
-        lower_bound = (((index - 1) * spacer) + 1)
-        upper_bound = min(n, index * spacer)
-        blankcount = 0
-
-        while true # BEGIN MONTE CARLO REALLOCATION: attempt to reallocate academic institutions to a random spot
-            k = rand(lower_bound:upper_bound)
-            @inbounds old_tier = current_allocation[k]
-            @inbounds new_tier = rand(delete!(Set(1:num), old_tier))
-            @inbounds current_allocation[k] = new_tier
-            # check if the new assignment is better
-            test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, num)
-            if test_objective < cur_objective
-                # SUCCESS: stop the sampler and load the improvement into a signal channel
-                blankcount = 0
-                put!(channel, [k, new_tier, test_objective])
-                while true
-                    yield() # stay until reset signal
-                    if flips[index] == 1
-                        @inbounds current_allocation .= global_allocation
-                        @inbounds flips[index] = 0
-                        @inbounds cur_objective = state[1]
-                        if isready(channel)
-                            take!(channel)
-                        end
-                        break
-                    end
-                end
-            else
-                # UNWIND: revert the change to current_allocation
-                @inbounds current_allocation[k] = old_tier
-
-                # EARLY STOP: if no improvements are impossible at all, stop the sampler 
-                blankcount += 1
-                if blankcount % 500 == 0
-                    found = false
-                    for i in 1:n, tier in 1:num
-                        @inbounds original = current_allocation[i]
-                        @inbounds current_allocation[i] = tier
-                        test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, num)
-                        if test_objective < cur_objective
-                            found = true
-                            break
-                        else
-                            @inbounds current_allocation[i] = original
-                        end
-                    end                            
-                    if !found
-                        return
-                    end
-                end
-
-                # RESET: if signalled, reset the sampler with new allocation
-                if flips[index] == 1
-                    @inbounds current_allocation .= global_allocation
-                    blankcount = 0
-                    @inbounds flips[index] = 0
-                    @inbounds cur_objective = state[1]
-                    if isready(channel)
-                        take!(channel)
-                    end
-                end
-            end
-        end
-    catch e
-        println("$(typeof(e)) in thread $index: $e")
-    end
-end
-
 function doit(sample, academic_institutions, sinks, all_institutions, num)
     # some initial states
+    num_academic = length(academic_institutions)
+    cur_objective = Inf
+    T = zeros(Float64, num + 1, num)
+    count = zeros(Float64, num + 1, num)
+    blankcount = 0
     current_allocation = Array{Int32}(undef, length(all_institutions))
     cursor = 1
     for _ in academic_institutions
@@ -127,30 +45,44 @@ function doit(sample, academic_institutions, sinks, all_institutions, num)
         cursor += 1
     end
 
-    state = zeros(1)
-    state[1] = Inf
-    channels = [Channel(1) for i in 1:nthreads() - 1]
-    flips = zeros(nthreads() - 1)
-    tasks = [@spawn search(channels[i], i, current_allocation, sample, flips, state, length(academic_institutions), num) for i in 1:nthreads()-1]
-    while true
-        for i in 1:nthreads()-1
-            yield()
-            if isready(channels[i])
-                @inbounds improvement = take!(channels[i])
-                @inbounds current_allocation[Int(improvement[1])] = improvement[2] # update the allocation
-                @inbounds state[1] = improvement[3]
-                @inbounds flips .= 1
-                while any(flips .== 1) && !all(istaskdone.(tasks))
-                    yield()
+    while true # BEGIN MONTE CARLO REALLOCATION: attempt to reallocate academic institutions to a random spot
+        k = rand(1:num_academic)
+        @inbounds old_tier = current_allocation[k]
+        @inbounds new_tier = rand(delete!(Set(1:num), old_tier))
+        @inbounds current_allocation[k] = new_tier
+        # check if the new assignment is better
+        test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, num)
+        if test_objective < cur_objective
+            print("$test_objective ")
+            # keep the improvement and continue
+            blankcount = 0
+            cur_objective = test_objective
+        else
+            # revert the change
+            @inbounds current_allocation[k] = old_tier
+            # EARLY STOP: if no improvements are possible at all, stop the sampler 
+            blankcount += 1
+            if blankcount % 1500 == 0
+                found = false
+                for i in 1:num_academic, tier in 1:num
+                    # conduct a single-department edit
+                    @inbounds original = current_allocation[i]
+                    @inbounds current_allocation[i] = tier
+                    test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, num)
+                    # revert the edit after computing the objective so the allocation is not tampered with
+                    @inbounds current_allocation[i] = original
+                    if test_objective < cur_objective
+                        found = true
+                        println("continue ")
+                        break
+                    end
+                end                            
+                if !found
+                    return cur_objective, current_allocation
                 end
-                break
             end
         end
-        if all(istaskdone.(tasks))
-            break
-        end
     end
-    return state[1], current_allocation
 end
 
 function bucket_extract(assign, A::Matrix{Int32}, num)
@@ -164,7 +96,7 @@ function bucket_extract(assign, A::Matrix{Int32}, num)
 end
 
 function main()
-    Random.seed!(0)            # for reproducibility: ensures random results are the same on script restart
+    Random.seed!(1)            # for reproducibility: ensures random results are the same on script restart
     YEAR_INTERVAL = 2003:2021  # change this to select the years of data to include in the estimation
     NUMBER_OF_TYPES = 4        # change this to select the number of types to classify academic departments into
 
