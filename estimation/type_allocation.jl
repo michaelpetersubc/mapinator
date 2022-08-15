@@ -1,3 +1,9 @@
+"""
+Accelerated SBM Sampler
+James Yuming Yu, 14 August 2022
+with optimizations by Jonah Heyl and Kieran Weaver
+"""
+
 using JSON
 using Random
 using Distributions
