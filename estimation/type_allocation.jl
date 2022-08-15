@@ -138,6 +138,16 @@ function variance_hessian(assign, o, A, est_mat, est_count, num)
     return variance
 end
 
+function confint(est_mat, est_count, variance, num)
+    res = Array{Any}(undef, num + 1, num)
+    z = 1.96
+    for i in 1:num+1, j in 1:num
+        mean = est_mat[i, j] / est_count[i, j]
+        res[i, j] = (mean - (z * sqrt(variance[i, j] / est_count[i, j])), mean + (z * sqrt(variance[i, j] / est_count[i, j])))
+    end
+    return res
+end
+
 function variance_sandwich(opg, hessian)
     return hessian .* hessian ./ opg
 end
@@ -316,6 +326,9 @@ function main()
     println()
     println("SAMPLE VARIANCES")
     display(variance_poisson(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES))
+    println()
+    println("95% CONFIDENCE INTERVAL ON MLE MEAN")
+    display(confint(est_mat, est_count, var_hessian, NUMBER_OF_TYPES))
     println()
     println("Check Complete")
 end
