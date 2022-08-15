@@ -1,5 +1,6 @@
 using JSON
 using Random
+using Distributions
 
 function bucket_estimate(assign::Array{Int32}, A::Matrix{Int32}, T::Array{Float64}, count::Array{Float64}, cur_objective, num)
     @inbounds T .= 0.0
@@ -12,11 +13,11 @@ function bucket_estimate(assign::Array{Int32}, A::Matrix{Int32}, T::Array{Float6
             @inbounds count[val] += 1
         end
     end
-    
-    for j in 1:size(T)[2]
-        @simd for i in 1:size(T)[1]
+
+    for j in 1:num
+        @simd for i in 1:num+1
             @inbounds base = T[i, j]
-            if base != 0.0 
+            if base != 0.0
                 @inbounds L += base * log(base / count[i, j])
             end
         end
@@ -76,7 +77,7 @@ function doit(sample, academic_institutions, sinks, all_institutions, num)
                         println("continue ")
                         break
                     end
-                end                            
+                end
                 if !found
                     return cur_objective, current_allocation
                 end
@@ -89,14 +90,54 @@ function bucket_extract(assign, A::Matrix{Int32}, num)
     T = zeros(Int32, num + 1, num)
     count = zeros(Int32, num + 1, num)
     for i in 1:size(A)[1], j in 1:size(A)[2]
-            @inbounds T[(num + 1) * (assign[j] - 1) + assign[i]] += A[i, j]
-            @inbounds count[(num + 1) * (assign[j] - 1) + assign[i]] += 1
+        @inbounds T[(num+1)*(assign[j]-1)+assign[i]] += A[i, j]
+        @inbounds count[(num+1)*(assign[j]-1)+assign[i]] += 1
     end
     return T, count
 end
 
+function variance_opg(assign, o, A, est_mat, est_count, num)
+    variance = zeros(num + 1, num)
+    for i in 1:size(A)[1], j in 1:size(A)[2]
+        est_mean = est_mat[o[assign[i]], o[assign[j]]] / est_count[o[assign[i]], o[assign[j]]]
+        variance[o[assign[i]], o[assign[j]]] += ((A[i, j] / est_mean) - 1)^2
+    end
+    for i in 1:num+1, j in 1:num
+        variance[i, j] = est_count[i, j] / variance[i, j] # (1 / n * sum)^-1
+    end
+    return variance
+end
+
+function variance_poisson(assign, o, A, est_mat, est_count, num)
+    variance = zeros(num + 1, num)
+    for i in 1:size(A)[1], j in 1:size(A)[2]
+        est_mean = est_mat[o[assign[i]], o[assign[j]]] / est_count[o[assign[i]], o[assign[j]]]
+        variance[o[assign[i]], o[assign[j]]] += (A[i, j] - est_mean)^2
+    end
+    for i in 1:num+1, j in 1:num
+        variance[i, j] /= (est_count[i, j])
+    end
+    return variance
+end
+
+function variance_hessian(assign, o, A, est_mat, est_count, num)
+    variance = zeros(num + 1, num)
+    for i in 1:size(A)[1], j in 1:size(A)[2]
+        est_mean = est_mat[o[assign[i]], o[assign[j]]] / est_count[o[assign[i]], o[assign[j]]]
+        variance[o[assign[i]], o[assign[j]]] += A[i, j] / (est_mean^2)
+    end
+    for i in 1:num+1, j in 1:num
+        variance[i, j] = est_count[i, j] / variance[i, j] # (1 / n * sum)^-1
+    end
+    return variance
+end
+
+function variance_sandwich(opg, hessian)
+    return hessian .* hessian ./ opg
+end
+
 function main()
-    Random.seed!(1)            # for reproducibility: ensures random results are the same on script restart
+    Random.seed!(0)            # for reproducibility: ensures random results are the same on script restart
     YEAR_INTERVAL = 2003:2021  # change this to select the years of data to include in the estimation
     NUMBER_OF_TYPES = 4        # change this to select the number of types to classify academic departments into
 
@@ -140,7 +181,7 @@ function main()
 
     for outcome in sink_builder
         # CODE global academic, other_placements, pri_sink, gov_sink, acd_sink
-        if outcome["recruiter_type"] in ["6","7"]
+        if outcome["recruiter_type"] in ["6", "7"]
             # private sector: for and not for profit
             push!(pri_sink, string(outcome["to_name"], " (private sector)"))
         elseif outcome["recruiter_type"] == "5"
@@ -156,6 +197,7 @@ function main()
     institutions = vcat(collect(academic), sinks)
 
     out = zeros(Int32, length(institutions), length(collect(academic)))
+
     i = 0
     for outcome in academic_builder
         i += 1
@@ -194,9 +236,9 @@ function main()
 
     est_mat, est_count = bucket_extract(est_alloc, out, NUMBER_OF_TYPES)
     M = est_mat
-    open("est_mat1.json","w") do f
-        write(f,JSON.string(est_mat))
-    end 
+    open("est_mat1.json", "w") do f
+        write(f, JSON.string(est_mat))
+    end
 
     # the new placements matrix
     placement_rates = zeros(Int32, (NUMBER_OF_TYPES + 1, NUMBER_OF_TYPES))
@@ -204,33 +246,34 @@ function main()
     #row sums in the estimated matrix
     ovector = sum(M, dims=1)
     # row sums reordered highest to lowest
-    svector = sortslices(ovector,dims=2, rev=true) 
+    svector = sortslices(ovector, dims=2, rev=true)
     #println(svector)
     #println(length(ovector))
     # a mapping from current row index to the index it should have in the new matrix
     o = Dict{}()
     for i in 1:length(ovector)
         for k in 1:length(svector)
-            if ovector[1,i] == svector[1,k]
+            if ovector[1, i] == svector[1, k]
                 o[i] = k
                 break
             end
         end
-    end 
+    end
+    o[NUMBER_OF_TYPES+1] = NUMBER_OF_TYPES+1 # deal with sinks for variance calculations
     #println(o)
     P = zeros(Int32, (NUMBER_OF_TYPES + 1, NUMBER_OF_TYPES))
     #shuffle the cells for the tier to tier placements
     for i in 1:NUMBER_OF_TYPES
         for j in 1:NUMBER_OF_TYPES
-            placement_rates[o[i],o[j]] = M[i,j]
-            new_counts[o[i],o[j]] = est_count[i,j]
+            placement_rates[o[i], o[j]] = M[i, j]
+            new_counts[o[i], o[j]] = est_count[i, j]
         end
     end
     #shuffle the cells for tier to sink placements (separate since sink row indices don't change)
     for i in NUMBER_OF_TYPES+1:NUMBER_OF_TYPES+1
         for j in 1:NUMBER_OF_TYPES
-            placement_rates[i,o[j]] = M[i,j]
-            new_counts[i,o[j]] = est_count[i,j]
+            placement_rates[i, o[j]] = M[i, j]
+            new_counts[i, o[j]] = est_count[i, j]
         end
     end
 
@@ -241,12 +284,33 @@ function main()
             end
         end
     end
-    open("est_mat2.json","w") do f
-        write(f,JSON.string(placement_rates))
-    end 
-    open("est_lambda.json","w") do f
-        write(f,JSON.string(placement_rates ./ new_counts))
-    end 
+    open("est_mat2.json", "w") do f
+        write(f, JSON.string(placement_rates))
+    end
+    open("est_lambda.json", "w") do f
+        write(f, JSON.string(placement_rates ./ new_counts))
+    end
+    println("SAMPLES:")
+    display(new_counts)
+    println()
+    println("MEAN:")
+    display(placement_rates ./ new_counts)
+    println()
+
+    var_opg = variance_opg(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES)
+    var_hessian = variance_hessian(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES)
+    println("MLE PARAMETER VARIANCE: OPG")
+    display(var_opg)
+    println()
+    println("MLE PARAMETER VARIANCE: HESSIAN")
+    display(var_hessian)
+    println()
+    println("MLE PARAMETER VARIANCE: SANDWICH")
+    display(variance_sandwich(var_opg, var_hessian))
+    println()
+    println("SAMPLE VARIANCES")
+    display(variance_poisson(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES))
+    println()
     println("Check Complete")
 end
 
