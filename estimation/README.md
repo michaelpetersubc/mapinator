@@ -4,17 +4,17 @@ Run the script using `julia --project -e 'using Pkg; Pkg.instantiate()'` followe
 
 The accelerated sampler in `type_allocation.jl` combines several optimizations for the original SBM procedure. These can be grouped into three categories:
 
-### Parallelization
+### ~~Parallelization~~ (optimization not currently used due to variable collision issues)
 
-On multi-threaded machines, additional processing power is available through the use of threading. Multiple computations can be conducted on parallel "threads" and compared at the end of a given search period. 
+~~On multi-threaded machines, additional processing power is available through the use of threading. Multiple computations can be conducted on parallel "threads" and compared at the end of a given search period.~~ 
 
-In our case, the SBM algorithm searches through the set of all departments in order to determine which type reallocations will produce improvements to the likelihood function. By default, the algorithm samples randomly from the full set of departments. Given that the machines the algorithm runs on support multithreading, multiple orders of magnitude of runtime improvements can be made by assigning different regions of the set of departments to different threads.
+~~In our case, the SBM algorithm searches through the set of all departments in order to determine which type reallocations will produce improvements to the likelihood function. By default, the algorithm samples randomly from the full set of departments. Given that the machines the algorithm runs on support multithreading, multiple orders of magnitude of runtime improvements can be made by assigning different regions of the set of departments to different threads.~~
 
-For example, instead of searching departments 1 through 462 on one thread, we can assign departments 1 to 231 and departments 232 to 462 to two separate search threads. These search threads will run at the same time instead of in sequence and be able to cover twice as much of the search space as the single-threaded algorithm can in the same amount of time.
+~~For example, instead of searching departments 1 through 462 on one thread, we can assign departments 1 to 231 and departments 232 to 462 to two separate search threads. These search threads will run at the same time instead of in sequence and be able to cover twice as much of the search space as the single-threaded algorithm can in the same amount of time.~~
 
-Once a search thread finds an improvement, it then signals the program (i.e. the thread manager, which has its own thread) to update all search threads with this improvement, after which the search threads reset and start searching again.
+~~Once a search thread finds an improvement, it then signals the program (i.e. the thread manager, which has its own thread) to update all search threads with this improvement, after which the search threads reset and start searching again.~~
 
-As a side bonus, the termination procedure of waiting until 30,000 reallocations in sequence have produced no likelihood improvements can now be distributed over search threads, although this procedure was further optimized using the following change.
+~~As a side bonus, the termination procedure of waiting until 30,000 reallocations in sequence have produced no likelihood improvements can now be distributed over search threads, although this procedure was further optimized using the following change.~~
 
 ### Early-Stopping
 
