@@ -4,7 +4,7 @@ Run the script using `julia --project -e 'using Pkg; Pkg.instantiate()'` followe
 
 The accelerated sampler in `type_allocation.jl` combines several optimizations for the original SBM procedure. These can be grouped into three categories:
 
-### ~~Parallelization~~ (optimization not currently used due to variable collision issues)
+### ~~Parallelization~~ (optimization not currently used due to variable collision issues; assume the number of search threads in use is one)
 
 ~~On multi-threaded machines, additional processing power is available through the use of threading. Multiple computations can be conducted on parallel "threads" and compared at the end of a given search period.~~ 
 
