@@ -201,7 +201,7 @@ function process_data(YEAR_INTERVAL)
             push!(acd_sink, string(outcome["to_name"], " (academic sink)"))
         end
     end
-    return academic_builder, sink_builder, academic, acd_sink, gov_sink, pri_sink, tch_sink, postdoc, lecturer
+    return academic_builder, sink_builder, academic, acd_sink, gov_sink, pri_sink, tch_sink, postdoc, lecturer, institution_mapping
 end
 #=
     Two functions used to assign universities to communities

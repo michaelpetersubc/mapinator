@@ -60,7 +60,7 @@ function doit(sample, academic_institutions, sinks, all_institutions, num)
         # check if the new assignment is better
         test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, num)
         if test_objective < cur_objective
-            print("$test_objective ")
+            # print("$test_objective ")
             # keep the improvement and continue
             blankcount = 0
             cur_objective = test_objective
@@ -80,7 +80,7 @@ function doit(sample, academic_institutions, sinks, all_institutions, num)
                     @inbounds current_allocation[i] = original
                     if test_objective < cur_objective
                         found = true
-                        println("continue ")
+                        # println("continue ")
                         break
                     end
                 end
@@ -155,7 +155,7 @@ end
 function main()
     Random.seed!(0)            # for reproducibility: ensures random results are the same on script restart
     YEAR_INTERVAL = 2003:2021  # change this to select the years of data to include in the estimation
-    NUMBER_OF_TYPES = 4        # change this to select the number of types to classify academic departments into
+    NUMBER_OF_TYPES = parse(Int64,ARGS[1])        # change this to select the number of types to classify academic departments into
 
     oid_mapping = Dict{}()
     institution_mapping = Dict{}()
@@ -170,7 +170,9 @@ function main()
         if in(parse(Int32, year), YEAR_INTERVAL)
             for (_, placement) in to_from_by_year[year]
                 push!(academic, placement["from_institution_name"])
-                push!(academic_to, placement["to_name"])
+                if placement["position_name"] == "Assistant Professor"
+                    push!(academic_to, placement["to_name"])
+                end
                 oid_mapping[placement["from_oid"]] = placement["from_institution_id"]
                 oid_mapping[placement["to_oid"]] = placement["to_institution_id"]
                 institution_mapping[placement["from_institution_id"]] = placement["from_institution_name"]
@@ -183,6 +185,9 @@ function main()
             end
         end
     end
+    println(length(academic_builder), " total assistant professor outcomes")
+    println(length(sink_builder), " other outcomes")
+    println(length(academic_builder)+length(sink_builder), " total outcomes")
 
     tch_sink = Set{}() # sink of teaching universities that do not graduate PhDs
     for key in academic_to
@@ -194,13 +199,12 @@ function main()
     acd_sink = Set{}()
     gov_sink = Set{}()
     pri_sink = Set{}()
-
     for outcome in sink_builder
         # CODE global academic, other_placements, pri_sink, gov_sink, acd_sink
-        if outcome["recruiter_type"] in ["6", "7"]
+        if outcome["recruiter_type"] in [6, 7]
             # private sector: for and not for profit
             push!(pri_sink, string(outcome["to_name"], " (private sector)"))
-        elseif outcome["recruiter_type"] == "5"
+        elseif outcome["recruiter_type"] == 5
             # government institution
             push!(gov_sink, string(outcome["to_name"], " (public sector)"))
         else
@@ -208,7 +212,12 @@ function main()
             push!(acd_sink, string(outcome["to_name"], " (academic sink)"))
         end
     end
-
+    println(length(academic), " academic institutions")
+    println(length(acd_sink), " academic sink institutions")
+    println(length(gov_sink), " government intitutions")
+    println(length(pri_sink), " private sector institutions")
+    println(length(tch_sink), " teaching institutions")
+    
     sinks = vcat(collect(acd_sink), collect(gov_sink), collect(pri_sink), collect(tch_sink))
     institutions = vcat(collect(academic), sinks)
 
@@ -222,9 +231,9 @@ function main()
     for outcome in sink_builder
         i += 1
         keycheck = ""
-        if outcome["recruiter_type"] in ["6", "7"]
+        if outcome["recruiter_type"] in [6, 7]
             keycheck = string(outcome["to_name"], " (private sector)")
-        elseif outcome["recruiter_type"] == "5"
+        elseif outcome["recruiter_type"] == 5
             keycheck = string(outcome["to_name"], " (public sector)")
         else
             keycheck = string(outcome["to_name"], " (academic sink)")
@@ -232,13 +241,14 @@ function main()
         out[findfirst(isequal(keycheck), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
     end
 
-    @time est_obj, est_alloc = doit(out, collect(academic), sinks, institutions, NUMBER_OF_TYPES)
+    @time est_obj, est_alloc = doit(out, collect(academic), sinks, institutions, NUMBER_OF_TYPES);
     if !(2 in est_alloc) && !(3 in est_alloc) && !(4 in est_alloc)
         println()
         println("ERROR IN SAMPLER (no movement detected)")
         println()
     else
-        for j in 1:NUMBER_OF_TYPES
+        println("likelihood is ", est_obj)
+        #=for j in 1:NUMBER_OF_TYPES
             println("TYPE $j:")
             for (i, type) in enumerate(est_alloc)
                 if type == j
@@ -246,8 +256,8 @@ function main()
                 end
             end
             println()
-        end
-    end
+        =#end
+    #end
 
 
     est_mat, est_count = bucket_extract(est_alloc, out, NUMBER_OF_TYPES)
@@ -306,7 +316,7 @@ function main()
     open("est_lambda.json", "w") do f
         write(f, JSON.string(placement_rates ./ new_counts))
     end
-    println("SAMPLES:")
+    #=println("SAMPLES:")
     display(new_counts)
     println()
     println("MEAN:")
@@ -330,7 +340,7 @@ function main()
     println("95% CONFIDENCE INTERVAL ON MLE MEAN")
     display(confint(est_mat, est_count, var_hessian, NUMBER_OF_TYPES))
     println()
-    println("Check Complete")
+    =#println("Check Complete")
 end
 
 main()
