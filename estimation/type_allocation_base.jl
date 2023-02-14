@@ -1,27 +1,33 @@
 """
 Accelerated SBM Sampler
-James Yuming Yu, 26 December 2022
-with optimizations by Jonah Heyl and Kieran Weaver
+James Yuming Yu, 14 February 2023
+with optimizations by Jonah Heyl, Kieran Weaver and others
 """
 
-using JSON
-using Random
-using Distributions
+module SBM
 
-function bucket_estimate(assign::Array{Int32}, A::Matrix{Int32}, T::Array{Float64}, count::Array{Float64}, cur_objective, numtier, numtotal)
-    @inbounds T .= 0.0
-    @inbounds count .= 0.0
+using JSON, Random, Distributions, PrettyTables
+
+export doit, get_placements, bucket_extract, get_results, estimate_parameters, nice_table
+
+function bucket_estimate(assign, A, T, count, numtier, numtotal)
+    """
+        Estimate the simplified log-likelihood of the data `A` given type assignment guess `assign`
+    """
+    @inbounds T .= 0
+    @inbounds count .= 0
     L = 0.0
-    for j in 1:size(A)[2]
-        @simd for i in 1:size(A)[1]
-            @inbounds val = (numtotal) * (assign[j] - 1) + assign[i]
+
+    for i in 1:size(A)[1]
+        @simd for j in 1:size(A)[2]
+            @inbounds val = numtotal * (assign[j] - 1) + assign[i]
             @inbounds T[val] += A[i, j]
             @inbounds count[val] += 1
         end
     end
 
-    for j in 1:numtier
-        @simd for i in 1:numtotal
+    for i in 1:numtotal
+        @simd for j in 1:numtier
             @inbounds base = T[i, j]
             if base != 0.0
                 @inbounds L += base * log(base / count[i, j])
@@ -31,53 +37,59 @@ function bucket_estimate(assign::Array{Int32}, A::Matrix{Int32}, T::Array{Float6
     return -L
 end
 
-function doit(sample, academic_institutions, acd_sink, gov_sink, pri_sink, tch_sink, all_institutions, numtier, numtotal, blankcount_tol)
+function doit(sample, T, count, num_academic, num_acd, num_gov, num_pri, num_tch, num_institutions, numtier, numtotal, blankcount_tol)
+    """
+        Compute the maximum likelihood estimate of the type assignment via SBM applied to the data `sample`
+    """
+    
     # some initial states
-    num_academic = length(academic_institutions)
     cur_objective = Inf
-    T = zeros(Float64, numtotal, numtier)
-    count = zeros(Float64, numtotal, numtier)
+    @inbounds T .= 0
+    @inbounds count .= 0
     blankcount = 0
-    current_allocation = Array{Int32}(undef, length(all_institutions))
+    current_allocation = Vector{Int32}(undef, num_institutions)
     new_tier_lookup = [deleteat!(Vector(1:numtier), i) for i in 1:numtier]
     cursor = 1
-    for _ in academic_institutions
+    for _ in 1:num_academic
         current_allocation[cursor] = 1
         cursor += 1
     end
-    for _ in acd_sink # other academic
+    for _ in 1:num_acd # other academic
         current_allocation[cursor] = numtier + 1 # the sinks must stay in fixed types
         cursor += 1
     end
-    for _ in gov_sink # govt institutions
+    for _ in 1:num_gov # govt institutions
         current_allocation[cursor] = numtier + 2
         cursor += 1
     end
-    for _ in pri_sink # private sector
+    for _ in 1:num_pri # private sector
         current_allocation[cursor] = numtier + 3
         cursor += 1
     end
-    for _ in tch_sink # teaching institutions
+    for _ in 1:num_tch # teaching institutions
         current_allocation[cursor] = numtier + 4
         cursor += 1
+    end
+
+    if numtier == 1 # if only one tier is required, we are already done
+        return cur_objective, current_allocation
     end
 
     while true # BEGIN MONTE CARLO REALLOCATION: attempt to reallocate academic institutions to a random spot
         k = rand(1:num_academic)
         @inbounds old_tier = current_allocation[k]
-        @inbounds new_tier = rand(new_tier_lookup[old_tier])
-        @inbounds current_allocation[k] = new_tier
+        @inbounds current_allocation[k] = rand(new_tier_lookup[old_tier])
         # check if the new assignment is better
-        test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, numtier, numtotal)
+        test_objective = bucket_estimate(current_allocation, sample, T, count, numtier, numtotal)
         if test_objective < cur_objective
-            print("$test_objective ")
+            # print("$test_objective ")
             # keep the improvement and continue
             blankcount = 0
             cur_objective = test_objective
         else
             # revert the change
             @inbounds current_allocation[k] = old_tier
-            # EARLY STOP: if no improvements are possible at all, stop the sampler 
+            # EARLY STOP: if no improvements are possible at all, stop the sampler
             blankcount += 1
             if blankcount % blankcount_tol == 0
                 found = false
@@ -85,12 +97,12 @@ function doit(sample, academic_institutions, acd_sink, gov_sink, pri_sink, tch_s
                     # conduct a single-department edit
                     @inbounds original = current_allocation[i]
                     @inbounds current_allocation[i] = tier
-                    test_objective = bucket_estimate(current_allocation, sample, T, count, cur_objective, numtier, numtotal)
+                    test_objective = bucket_estimate(current_allocation, sample, T, count, numtier, numtotal)
                     # revert the edit after computing the objective so the allocation is not tampered with
                     @inbounds current_allocation[i] = original
                     if test_objective < cur_objective
                         found = true
-                        println("continue ")
+                        # println("continue ")
                         break
                     end
                 end
@@ -102,79 +114,10 @@ function doit(sample, academic_institutions, acd_sink, gov_sink, pri_sink, tch_s
     end
 end
 
-function bucket_extract(assign, A::Matrix{Int32}, numtier, numtotal)
-    T = zeros(Int32, numtotal, numtier)
-    count = zeros(Int32, numtotal, numtier)
-    for i in 1:size(A)[1], j in 1:size(A)[2]
-        @inbounds T[(numtotal)*(assign[j]-1)+assign[i]] += A[i, j]
-        @inbounds count[(numtotal)*(assign[j]-1)+assign[i]] += 1
-    end
-    return T, count
-end
-
-function variance_opg(assign, o, A, est_mat, est_count, numtier, numtotal)
-    variance = zeros(numtotal, numtier)
-    for i in 1:size(A)[1], j in 1:size(A)[2]
-        est_mean = est_mat[o[assign[i]], o[assign[j]]] / est_count[o[assign[i]], o[assign[j]]]
-        variance[o[assign[i]], o[assign[j]]] += ((A[i, j] / est_mean) - 1)^2
-    end
-    for i in 1:numtotal, j in 1:numtier
-        variance[i, j] = est_count[i, j] / variance[i, j] # (1 / n * sum)^-1
-    end
-    return variance
-end
-
-function variance_poisson(assign, o, A, est_mat, est_count, numtier, numtotal)
-    variance = zeros(numtotal, numtier)
-    for i in 1:size(A)[1], j in 1:size(A)[2]
-        est_mean = est_mat[o[assign[i]], o[assign[j]]] / est_count[o[assign[i]], o[assign[j]]]
-        variance[o[assign[i]], o[assign[j]]] += (A[i, j] - est_mean)^2
-    end
-    for i in 1:numtotal, j in 1:numtier
-        variance[i, j] /= (est_count[i, j])
-    end
-    return variance
-end
-
-function variance_hessian(assign, o, A, est_mat, est_count, numtier, numtotal)
-    variance = zeros(numtotal, numtier)
-    for i in 1:size(A)[1], j in 1:size(A)[2]
-        est_mean = est_mat[o[assign[i]], o[assign[j]]] / est_count[o[assign[i]], o[assign[j]]]
-        variance[o[assign[i]], o[assign[j]]] += A[i, j] / (est_mean^2)
-    end
-    for i in 1:numtotal, j in 1:numtier
-        variance[i, j] = est_count[i, j] / variance[i, j] # (1 / n * sum)^-1
-    end
-    return variance
-end
-
-function confint(est_mat, est_count, variance, numtier, numtotal)
-    res = Array{Any}(undef, numtotal, numtier)
-    z = 1.96
-    for i in 1:numtotal, j in 1:numtier
-        mean = est_mat[i, j] / est_count[i, j]
-        res[i, j] = (mean - (z * sqrt(variance[i, j] / est_count[i, j])), mean + (z * sqrt(variance[i, j] / est_count[i, j])))
-    end
-    return res
-end
-
-function variance_sandwich(opg, hessian)
-    return hessian .* hessian ./ opg
-end
-
-#=
-Parameter 1: The number of academic types.
-Parameter 2: After the algorithm sees k iterations with no improvements, 
-it will attempt to check if absolutely no improvements are possible at all.
-This parameter is k.
-=#
-
-function main(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED = 0)
-    Random.seed!(SEED)            # for reproducibility: ensures random results are the same on script restart
-    YEAR_INTERVAL = 2003:2021  # change this to select the years of data to include in the estimation
-
-    NUMBER_OF_SINKS = 4        # this should not change unless you change the sink structure
-    numtotal = NUMBER_OF_TYPES + NUMBER_OF_SINKS
+function get_placements(YEAR_INTERVAL, DEBUG)
+    """
+        Extract the relevant placement outcomes from `to_from_by_year.json`
+    """
 
     oid_mapping = Dict{}()
     institution_mapping = Dict{}()
@@ -184,6 +127,7 @@ function main(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED = 0)
     academic_builder = Set{}()
     sink_builder = Set{}()
 
+    # if changing the file source to a web source, separate the following line into an isolated routine so that the web source can be saved before running multiple rounds of allocations (to avoid problems where different rounds have different versions of data if the API is updated while estimating)
     to_from_by_year = JSON.parsefile("to_from_by_year.json")
     for year in keys(to_from_by_year)
         if in(parse(Int32, year), YEAR_INTERVAL)
@@ -215,15 +159,15 @@ function main(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED = 0)
     pri_sink = Set{}()
 
     for outcome in sink_builder
-        if outcome["recruiter_type"] in [6, 7, "6", "7"]
-            # private sector: for and not for profit
-            push!(pri_sink, string(outcome["to_name"], " (private sector)"))
-        elseif outcome["recruiter_type"] in [5, "5"]
+        if outcome["recruiter_type"] == 5
             # government institution
             push!(gov_sink, string(outcome["to_name"], " (public sector)"))
-        else
-            # everything else including terminal academic positions
-            push!(acd_sink, string(outcome["to_name"], " (academic sink)"))
+        elseif outcome["recruiter_type"] in [6, 7]
+            # private sector: for and not for profit
+            push!(pri_sink, string(outcome["to_name"], " (private sector)"))
+        elseif outcome["recruiter_type"] == 8
+            # international organizations and think tanks
+            push!(acd_sink, string(outcome["to_name"], " (international sink)"))
         end
     end
 
@@ -237,134 +181,210 @@ function main(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED = 0)
 
     out = zeros(Int32, length(institutions), length(academic_list))
 
-    i = 0
+    num_outcomes_selected = length(academic_builder)
     for outcome in academic_builder
-        i += 1
         out[findfirst(isequal(outcome["to_name"]), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
     end
     for outcome in sink_builder
-        i += 1
         keycheck = ""
-        if outcome["recruiter_type"] in [6, 7, "6", "7"]
-            keycheck = string(outcome["to_name"], " (private sector)")
-        elseif outcome["recruiter_type"] in [5, "5"]
+        if outcome["recruiter_type"] == 5
             keycheck = string(outcome["to_name"], " (public sector)")
-        else
-            keycheck = string(outcome["to_name"], " (academic sink)")
+        elseif outcome["recruiter_type"] in [6, 7]
+            keycheck = string(outcome["to_name"], " (private sector)")
+        elseif outcome["recruiter_type"] == 8
+            keycheck = string(outcome["to_name"], " (international sink)")
         end
-        out[findfirst(isequal(keycheck), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
+        if keycheck != ""
+            num_outcomes_selected += 1
+            out[findfirst(isequal(keycheck), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
+        end
+    end
+    if DEBUG
+        println("Total ", num_outcomes_selected, " Placements")
     end
 
-    @time est_obj, est_alloc = doit(out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, institutions, NUMBER_OF_TYPES, numtotal, BLANKCOUNT_TOL)
+    return out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions
+end
 
-    est_mat, est_count = bucket_extract(est_alloc, out, NUMBER_OF_TYPES, numtotal)
-    M = est_mat
+function bucket_extract(assign, A, numtier, numtotal)
+    """
+        Extract the Poisson means from data `A` given type assignment `assign`
+    """
 
-    # the new placements matrix
-    placement_rates = zeros(Int32, (numtotal, NUMBER_OF_TYPES))
-    new_counts = zeros(Int32, (numtotal, NUMBER_OF_TYPES))
-    #row sums in the estimated matrix
-    ovector = sum(M, dims=1)
-    # row sums reordered highest to lowest
-    svector = sortslices(ovector, dims=2, rev=true)
-    #println(svector)
-    #println(length(ovector))
-    # a mapping from current row index to the index it should have in the new matrix
-    o = Dict{}()
-    for i in 1:length(ovector)
-        for k in 1:length(svector)
-            if ovector[1, i] == svector[1, k]
-                o[i] = k
-                break
+    b = zeros(Int32, size(A))
+    T = zeros(Int32, numtotal, numtier)
+    count = zeros(Int32, numtotal, numtier)
+    for i in 1:size(A)[1], j in 1:size(A)[2]
+        @inbounds val = numtotal * (assign[j] - 1) + assign[i]
+        @inbounds b[i, j] = val
+        @inbounds T[val] += A[i, j]
+        @inbounds count[val] += 1
+    end
+    
+    L = 0.0
+    @simd for i in eachindex(A)
+        @inbounds L += logpdf(Poisson(T[b[i]]/count[b[i]]), A[i])
+    end
+    return T, count, L
+end
+
+function get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+    """
+        Compiles sorted SBM results
+    """
+
+    @inbounds placement_rates .= 0
+    @inbounds counts .= 0
+
+    # mapping o[i]: takes an unsorted SBM-marked type i and outputs the corresponding true, sorted type
+    o = zeros(Int32, numtotal)
+    o[vcat(sortperm(vec(sum(est_mat, dims = 1)), rev=true), NUMBER_OF_TYPES+1:numtotal)] = 1:numtotal
+
+    # shuffle the cells for the tier to tier placements
+    for i in 1:numtotal
+        @simd for j in 1:NUMBER_OF_TYPES
+            placement_rates[o[i], o[j]] = est_mat[i, j]
+            counts[o[i], o[j]] = est_count[i, j]
+        end
+    end
+
+    # shuffle the allocation
+    sorted_allocation = Vector{Int32}(undef, length(institutions))
+    for i in 1:length(institutions)
+        sorted_allocation[i] = o[est_alloc[i]]
+    end
+
+    return sorted_allocation, o
+end
+
+#=
+NUMBER_OF_TYPES: The number of academic types.
+BLANKCOUNT_TOL: After the algorithm sees X iterations with no improvements,
+it will attempt to check if absolutely no improvements are possible at all.
+This parameter is X.
+=#
+
+function estimate_parameters(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED=0, DEBUG=false)
+    """
+        Compute parameter estimates via SBM from the `doit` function
+    """
+
+    Random.seed!(SEED)         # for reproducibility: ensures random results are the same on script restart
+    YEAR_INTERVAL = 2003:2021  # change this to select the years of data to include in the estimation
+    NUMBER_OF_SINKS = 4        # this should not change unless you change the sink structure
+    numtotal = NUMBER_OF_TYPES + NUMBER_OF_SINKS
+
+    out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions = get_placements(YEAR_INTERVAL, DEBUG)
+    placement_rates = zeros(Int32, numtotal, NUMBER_OF_TYPES)
+    counts = zeros(Int32, numtotal, NUMBER_OF_TYPES)
+
+    est_obj = nothing
+    est_alloc = nothing
+    if DEBUG
+        @time est_obj, est_alloc = doit(out, placement_rates, counts, length(academic_list), length(acd_sink_list), length(gov_sink_list), length(pri_sink_list), length(tch_sink_list), length(institutions), NUMBER_OF_TYPES, numtotal, BLANKCOUNT_TOL)
+    else
+        est_obj, est_alloc = doit(out, placement_rates, counts, length(academic_list), length(acd_sink_list), length(gov_sink_list), length(pri_sink_list), length(tch_sink_list), length(institutions), NUMBER_OF_TYPES, numtotal, BLANKCOUNT_TOL)
+    end
+
+    est_mat, est_count, full_likelihood = bucket_extract(est_alloc, out, NUMBER_OF_TYPES, numtotal)
+
+    sorted_allocation, o = get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+
+    if DEBUG
+        if NUMBER_OF_TYPES > 1 && all([!(i in est_alloc) for i in 2:NUMBER_OF_TYPES])
+            println()
+            println("ERROR IN SAMPLER (no movement detected)")
+            println()
+        else
+            for sorted_type in 1:NUMBER_OF_TYPES
+                counter = 0
+                inst_hold = []
+                println("TYPE $sorted_type:")
+                for (i, sbm_type) in enumerate(est_alloc)
+                    if sorted_type == o[sbm_type]
+                        push!(inst_hold, institutions[i])
+                        counter += 1
+                    end
+                end
+                for inst in sort(inst_hold)
+                    println("  ", inst)
+                end
+                println("Total Institutions: $counter")
+                println()
             end
         end
-    end
-    for i in 1:NUMBER_OF_SINKS
-        o[NUMBER_OF_TYPES+i] = NUMBER_OF_TYPES+i # deal with sinks for variance calculations
-    end
-    #println(o)
-    P = zeros(Int32, (numtotal, NUMBER_OF_TYPES))
-    #shuffle the cells for the tier to tier placements
-    for i in 1:NUMBER_OF_TYPES
-        for j in 1:NUMBER_OF_TYPES
-            placement_rates[o[i], o[j]] = M[i, j]
-            new_counts[o[i], o[j]] = est_count[i, j]
-        end
-    end
-    #shuffle the cells for tier to sink placements (separate since sink row indices don't change)
-    for i in NUMBER_OF_TYPES+1:numtotal
-        for j in 1:NUMBER_OF_TYPES
-            placement_rates[i, o[j]] = M[i, j]
-            new_counts[i, o[j]] = est_count[i, j]
-        end
-    end
 
-    if !(2 in est_alloc) && !(3 in est_alloc) && !(4 in est_alloc)
+        try
+            mkdir(".estimates")
+        catch
+        end
+
+        open(".estimates/estimated_raw_placement_counts.json", "w") do f
+            write(f, JSON.string(est_mat))
+        end
+
+        println("Estimated Placement Counts (unsorted):")
+        display(est_mat)
         println()
-        println("ERROR IN SAMPLER (no movement detected)")
-        println()
-    else
-        for j in 1:NUMBER_OF_TYPES
-            counter = 0
-            println("TYPE $j:")
-            for (i, type) in enumerate(est_alloc)
-                if o[type] == j
-                    println("  ", institutions[i])
-                    counter += 1
+
+        for i in 1:NUMBER_OF_TYPES, j in 1:NUMBER_OF_TYPES
+            if i > j # not a diagonal and only check once
+                if placement_rates[i, j] <= placement_rates[j, i]
+                    println("FAULT: hiring ", i, " with graduating ", j, ": downward rate: ", placement_rates[i, j], ", upward rate: ", placement_rates[j, i])
                 end
             end
-            println("Total Institutions: $counter")
         end
-    end
-    open("estimated_raw_placement_counts.json", "w") do f
-        write(f, JSON.string(est_mat))
-    end
-    println("Estimated Placement Counts (unsorted):")
-    display(est_mat)
-    println()
-    for i in 1:NUMBER_OF_TYPES, j in 1:NUMBER_OF_TYPES
-        if i > j # not a diagonal and only check once
-            if placement_rates[i, j] <= placement_rates[j, i]
-                println("FAULT: hiring ", i, " with graduating ", j, ": downward rate: ", placement_rates[i, j], ", upward rate: ", placement_rates[j, i])
-            end
+        open(".estimates/estimated_sorted_placement_counts.json", "w") do f
+            write(f, JSON.string(placement_rates))
         end
-    end
-    open("sorted_estimated_placement_counts.json", "w") do f
-        write(f, JSON.string(placement_rates))
-    end
-    println("Estimated Placement Counts (sorted types):")
-    display(placement_rates)
-    println()
-    open("estimated_placement_rates.json", "w") do f
-        write(f, JSON.string(placement_rates ./ new_counts))
-    end
-    println("Estimated Placement Rates (sorted types):")
-    display(placement_rates./ new_counts)
-    println()
-    println("SAMPLES:")
-    display(new_counts)
-    println()
-    println("MEAN:")
-    display(placement_rates ./ new_counts)
-    println()
+        println()
+        println("Estimated Placement Counts (sorted types):")
+        display(placement_rates)
+        println()
+        open(".estimates/estimated_placement_rates.json", "w") do f
+            write(f, JSON.string(placement_rates ./ counts))
+        end
+        println("Estimated Placement Rates (sorted types):")
+        display(placement_rates ./ counts)
+        println()
 
-    var_opg = variance_opg(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES, numtotal)
-    var_hessian = variance_hessian(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES, numtotal)
-    println("MLE PARAMETER VARIANCE: OPG")
-    display(var_opg)
-    println()
-    println("MLE PARAMETER VARIANCE: HESSIAN")
-    display(var_hessian)
-    println()
-    println("MLE PARAMETER VARIANCE: SANDWICH")
-    display(variance_sandwich(var_opg, var_hessian))
-    println()
-    println("SAMPLE VARIANCES")
-    display(variance_poisson(est_alloc, o, out, placement_rates, new_counts, NUMBER_OF_TYPES, numtotal))
-    println()
-    println("95% CONFIDENCE INTERVAL ON MLE MEAN")
-    display(confint(est_mat, est_count, var_hessian, NUMBER_OF_TYPES, numtotal))
-    println()
-    println("Check Complete")
-    return placement_rates, placement_rates ./ new_counts, est_obj, est_alloc, institutions, o, length(institutions)
+        println("Check Complete")
+    end
+
+    return (; 
+        placements = placement_rates,
+        counters = counts, 
+        means = placement_rates ./ counts, 
+        likelihood = full_likelihood, 
+        allocation = sorted_allocation, 
+        institutions,
+        num_institutions = length(institutions)
+    )
+end
+
+## print a nice version of the adjacency matrix with tiers and return the latex
+## function by Mike Peters from https://github.com/michaelpetersubc/mapinator/blob/355ad808bddcb392388561d25a63796c81ff04c0/estimation/functions.jl
+## TODO: port the API functionality from the same file
+function nice_table(t_table, num, numsinks, sinks)
+    column_sums = sum(t_table, dims=1)
+    row_sums = sum(t_table, dims=2)
+    row_sums_augmented = vcat(row_sums, sum(row_sums))
+    part = vcat(t_table,column_sums)
+    adjacency = hcat(part, row_sums_augmented)
+    headers = []
+    names = []
+    for i=1:num
+        push!(headers, "Tier $i")
+        push!(names, "Tier $i")
+    end
+    #println(headers)
+
+    push!(headers, "Row Totals")
+    names = cat(names, sinks, dims=1)
+    #headers = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "Row totals"]
+    #names = ["Tier 1","Tier 2","Tier 3","Tier 4","Other Academic","Government","Private Sector","Teaching Universities","Column Totals"]
+    pretty_table(adjacency, header = headers, row_names=names)
+    return pretty_table(adjacency, header = headers, row_names=names, backend=Val(:latex))
+end
+
 end
