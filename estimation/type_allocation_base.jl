@@ -1,6 +1,6 @@
 """
 Accelerated SBM Sampler
-James Yuming Yu, 14 February 2023
+James Yuming Yu, 10 June 2023
 with optimizations by Jonah Heyl, Kieran Weaver and others
 """
 
@@ -114,7 +114,22 @@ function doit(sample, T, count, num_academic, num_acd, num_gov, num_pri, num_tch
     end
 end
 
-function get_placements(YEAR_INTERVAL, DEBUG)
+function keycheck(outcome)
+    """
+        Department name conversion helper function for sinks
+    """
+
+    if outcome["recruiter_type"] == 5
+        return string(outcome["to_name"], " (public sector)")
+    elseif outcome["recruiter_type"] in [6, 7]
+        return string(outcome["to_name"], " (private sector)")
+    elseif outcome["recruiter_type"] == 8
+        return string(outcome["to_name"], " (international sink)")
+    end
+    return outcome["to_name"]
+end
+
+function get_placements(YEAR_INTERVAL, DEBUG; bootstrap_samples = 0)
     """
         Extract the relevant placement outcomes from `to_from_by_year.json`
     """
@@ -124,13 +139,14 @@ function get_placements(YEAR_INTERVAL, DEBUG)
 
     academic = Set{}()
     academic_to = Set{}()
-    academic_builder = Set{}()
-    sink_builder = Set{}()
+    academic_builder = []
+    rough_sink_builder = []
 
     # if changing the file source to a web source, separate the following line into an isolated routine so that the web source can be saved before running multiple rounds of allocations (to avoid problems where different rounds have different versions of data if the API is updated while estimating)
     to_from_by_year = JSON.parsefile("to_from_by_year.json")
     for year in keys(to_from_by_year)
         if in(parse(Int32, year), YEAR_INTERVAL)
+            # ASSUMPTION: every applicant ID has only one placement
             for (_, placement) in to_from_by_year[year]
                 push!(academic, placement["from_institution_name"])
                 push!(academic_to, placement["to_name"])
@@ -139,9 +155,10 @@ function get_placements(YEAR_INTERVAL, DEBUG)
                 institution_mapping[string(placement["from_institution_id"])] = placement["from_institution_name"]
                 institution_mapping[string(placement["to_institution_id"])] = placement["to_name"]
                 if placement["position_name"] == "Assistant Professor"
+                    # TODO: why is asstprof in rectype Set(Any[5, 4, 7, 2, 10, 3, 1])
                     push!(academic_builder, placement)
                 else
-                    push!(sink_builder, placement)
+                    push!(rough_sink_builder, placement)
                 end
             end
         end
@@ -157,50 +174,69 @@ function get_placements(YEAR_INTERVAL, DEBUG)
     acd_sink = Set{}()
     gov_sink = Set{}()
     pri_sink = Set{}()
+    sink_builder = []
 
-    for outcome in sink_builder
+    for outcome in rough_sink_builder
         if outcome["recruiter_type"] == 5
             # government institution
             push!(gov_sink, string(outcome["to_name"], " (public sector)"))
+            push!(sink_builder, outcome)
         elseif outcome["recruiter_type"] in [6, 7]
             # private sector: for and not for profit
             push!(pri_sink, string(outcome["to_name"], " (private sector)"))
+            push!(sink_builder, outcome)
         elseif outcome["recruiter_type"] == 8
             # international organizations and think tanks
             push!(acd_sink, string(outcome["to_name"], " (international sink)"))
+            push!(sink_builder, outcome)
         end
     end
 
-    academic_list = collect(academic)
-    acd_sink_list = collect(acd_sink)
-    gov_sink_list = collect(gov_sink)
-    pri_sink_list = collect(pri_sink)
-    tch_sink_list = collect(tch_sink)
+    # sort to ensure consistent ordering
+    academic_list = sort(collect(academic))
+    acd_sink_list = sort(collect(acd_sink))
+    gov_sink_list = sort(collect(gov_sink))
+    pri_sink_list = sort(collect(pri_sink))
+    tch_sink_list = sort(collect(tch_sink))
     sinks = vcat(acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list)
     institutions = vcat(academic_list, sinks)
 
     out = zeros(Int32, length(institutions), length(academic_list))
 
-    num_outcomes_selected = length(academic_builder)
-    for outcome in academic_builder
-        out[findfirst(isequal(outcome["to_name"]), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
-    end
-    for outcome in sink_builder
-        keycheck = ""
-        if outcome["recruiter_type"] == 5
-            keycheck = string(outcome["to_name"], " (public sector)")
-        elseif outcome["recruiter_type"] in [6, 7]
-            keycheck = string(outcome["to_name"], " (private sector)")
-        elseif outcome["recruiter_type"] == 8
-            keycheck = string(outcome["to_name"], " (international sink)")
+    # if bootstrap sampling, only select a few placements
+    # if not, this list will be empty (bootstrap_samples = 0)
+    """ TODO: if in bootstrap a department doesn't contribute to the likelihood (all zeros), does this bias the data? is this an issue? """
+    indices_to_include = rand(1:length(academic_builder)+length(sink_builder), bootstrap_samples)
+    outcome_counter = 0
+
+    if bootstrap_samples == 0
+        for outcome in academic_builder
+            outcome_counter += 1
+            out[findfirst(isequal(outcome["to_name"]), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
         end
-        if keycheck != ""
-            num_outcomes_selected += 1
-            out[findfirst(isequal(keycheck), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
+        for outcome in sink_builder
+            outcome_counter += 1
+            out[findfirst(isequal(keycheck(outcome)), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
+        end
+    else
+        for index in indices_to_include
+            if index <= length(academic_builder)
+                outcome = academic_builder[index]
+                outcome_counter += 1
+                out[findfirst(isequal(outcome["to_name"]), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
+            else
+                outcome = sink_builder[index - length(academic_builder)]
+                outcome_counter += 1
+                out[findfirst(isequal(keycheck(outcome)), institutions), findfirst(isequal(outcome["from_institution_name"]), institutions)] += 1
+            end
         end
     end
+
     if DEBUG
-        println("Total ", num_outcomes_selected, " Placements")
+        println("Total ", length(academic_builder)+length(sink_builder), " Placements (found ", outcome_counter, " by sequence counting, ", sum(out), " by matrix sum)")
+        if bootstrap_samples != 0
+            println(" bootstrapping ", bootstrap_samples, " samples")
+        end
     end
 
     return out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions
@@ -233,6 +269,7 @@ function get_results(placement_rates, counts, est_mat, est_count, est_alloc, ins
         Compiles sorted SBM results
     """
 
+    # TODO: make this function return the placement rates on its own
     @inbounds placement_rates .= 0
     @inbounds counts .= 0
 
