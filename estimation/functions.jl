@@ -19,13 +19,13 @@ function create_adjacency_matrix(academic_builder, sink_builder, academic,acd_si
     for outcome in sink_builder
             i += 1
             keycheck = ""
-            if outcome["recruiter_type"] in ["6", "7"]
+            if outcome["recruiter_type"] in [6, 7]
                 keycheck = string(outcome["to_name"], " (private sector)")
-            elseif outcome["recruiter_type"] == "5"
+            elseif outcome["recruiter_type"] == 5
                 keycheck = string(outcome["to_name"], " (public sector)")
-            elseif outcome["postype"] == "6"
+            elseif outcome["postype"] == 6
                 keycheck = string(outcome["to_name"], " (postdoc)")
-            elseif outcome["postype"] in ["5", "7"]
+            elseif outcome["postype"] in [5, 7]
                 keycheck = string(outcome["to_name"], " (lecturer)")
             else
                 keycheck = string(outcome["to_name"], " (academic sink)")
@@ -146,8 +146,9 @@ function process_data(YEAR_INTERVAL)
     academic_to = Set{}()
     academic_builder = Set{}()
     sink_builder = Set{}()
+        #if in(parse(Int64, placement["year"]), YEAR_INTERVAL)
     for placement in placements
-        if in(parse(Int64, placement["year"]), YEAR_INTERVAL)
+            if in(placement["year"], YEAR_INTERVAL)
             push!(academic, placement["from_institution_name"])
             if placement["position_name"] == "Assistant Professor"
                     push!(academic_to, placement["to_name"])
@@ -156,7 +157,7 @@ function process_data(YEAR_INTERVAL)
             oid_mapping[placement["to_oid"]] = placement["to_institution_id"]
             institution_mapping[placement["from_institution_id"]] = placement["from_institution_name"]
             institution_mapping[placement["to_institution_id"]] = placement["to_name"]
-            if placement["postype"] == "1"
+            if placement["postype"] == 1
                 push!(academic_builder, placement)
             else
                 push!(sink_builder, placement)
@@ -184,16 +185,16 @@ function process_data(YEAR_INTERVAL)
     lecturer = Set{}()
     for outcome in sink_builder
         # CODE global academic, other_placements, pri_sink, gov_sink, acd_sink
-        if outcome["recruiter_type"] in ["6", "7"]
+        if outcome["recruiter_type"] in [6, 7]
             # private sector: for and not for profit
             push!(pri_sink, string(outcome["to_name"], " (private sector)"))
-        elseif outcome["recruiter_type"] == "5"
+        elseif outcome["recruiter_type"] == 5
             # government institution
             push!(gov_sink, string(outcome["to_name"], " (public sector)"))
-        elseif outcome["postype"] == "6"
+        elseif outcome["postype"] == 6
             #postdoc
             push!(postdoc, string(outcome["to_name"], " (postdoc)"))
-        elseif outcome["postype"] in ["5", "7"]
+        elseif outcome["postype"] in [5, 7]
             #postdoc
             push!(lecturer, string(outcome["to_name"], " (lecturer)"))
         else
