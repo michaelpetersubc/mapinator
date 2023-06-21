@@ -151,7 +151,7 @@ function main(; SEED=0)
 
         println("  Completed round $i on thread $(Threads.threadid())")
     end
-    bootstrap_output = Dict("placement_rates" => est_mat_store, "placement_counts" => est_count_store, "type_allocation" => est_alloc_store, "dept_labels" => institutions_store, "likelihoods" => likelihood_store, "model_estimates" => sol_store, "n" => n_store, "m" => m_store, "NUMBER_OF_TYPES" => NUMBER_OF_TYPES, "NUMBER_OF_SINKS" => NUMBER_OF_SINKS, "YEAR_INTERVAL" => YEAR_INTERVAL, "BOOTSTRAP_SAMPLE_SIZE" => BOOTSTRAP_SAMPLE_SIZE, "BOOTSTRAP_ROUNDS" => BOOTSTRAP_ROUNDS, "upper" => upper, "lower" => 0.0, "SEED" => SEED)
+    bootstrap_output = Dict("placement_rates" => est_mat_store, "placement_counts" => est_count_store, "type_allocation" => est_alloc_store, "dept_labels" => institutions_store, "likelihoods" => likelihood_store, "model_estimates" => sol_store, "n" => n_store, "m" => m_store, "NUMBER_OF_TYPES" => NUMBER_OF_TYPES, "NUMBER_OF_SINKS" => NUMBER_OF_SINKS, "YEAR_INTERVAL" => YEAR_INTERVAL, "BOOTSTRAP_SAMPLE_SIZE" => BOOTSTRAP_SAMPLE_SIZE, "BOOTSTRAP_ROUNDS" => BOOTSTRAP_ROUNDS, "upper" => upper, "SEED" => SEED)
     mkpath(".estimates")
     save(".estimates/model_bootstrap_output.jld2", bootstrap_output)
 end
