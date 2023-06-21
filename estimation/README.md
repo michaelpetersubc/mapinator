@@ -4,40 +4,6 @@ Run the script using `julia --project -e 'using Pkg; Pkg.instantiate()'` followe
 
 The accelerated sampler in `type_allocation.jl` combines several optimizations for the original SBM procedure. These can be grouped into three categories:
 
-### ~~Parallelization~~ (optimization not currently used due to variable collision issues; assume the number of search threads in use is one)
-
-~~On multi-threaded machines, additional processing power is available through the use of threading. Multiple computations can be conducted on parallel "threads" and compared at the end of a given search period.~~ 
-
-~~In our case, the SBM algorithm searches through the set of all departments in order to determine which type reallocations will produce improvements to the likelihood function. By default, the algorithm samples randomly from the full set of departments. Given that the machines the algorithm runs on support multithreading, multiple orders of magnitude of runtime improvements can be made by assigning different regions of the set of departments to different threads.~~
-
-~~For example, instead of searching departments 1 through 462 on one thread, we can assign departments 1 to 231 and departments 232 to 462 to two separate search threads. These search threads will run at the same time instead of in sequence and be able to cover twice as much of the search space as the single-threaded algorithm can in the same amount of time.~~
-
-~~Once a search thread finds an improvement, it then signals the program (i.e. the thread manager, which has its own thread) to update all search threads with this improvement, after which the search threads reset and start searching again.~~
-
-~~As a side bonus, the termination procedure of waiting until 30,000 reallocations in sequence have produced no likelihood improvements can now be distributed over search threads, although this procedure was further optimized using the following change.~~
-
-### Early-Stopping
-
-There are two early-stopping improvements which allow the algorithm to spend less time on redundant calculations:
-
-#### Search Thread Termination
-
-The first is an early-stopping procedure in the search threads. Given that the likelihood computation is now more efficient, it has become viable to conduct a thorough validation of the existence of further likelihood improvements after a certain period of search time.
-
-After 500-1000 periods of no improvements on any of the search threads (which for e.g. 7 threads is actually 3500-7000 searches), it is often a good guess that the algorithm is either close to or exactly unable to make any further optimizations.
-
-The early-stopping procedure, to implement this guess, attempts to reallocate, in sequence, every department to every possible tier. This is the full set of possible reallocations given the current allocation.
-
-If none of these reallocations produce a likelihood improvement, then we know with certainty that no further improvements are possible, so we can stop the search threads without having to wait for 30,000 reallocations as before.
-
-Currently this procedure is done redundantly on all search threads at once, as to distribute it would require extra code for data communication between the search threads. At the moment, distributing it is not necessary but can be added for additional speed benefits if required.
-
-#### Likelihood Shortcutting
-
-The likelihood function updates by sequentially adding the likelihood of each individual department-department pair. Our objective function declares an improvement only if the result of the procedure is less than the previous best objective value.
-
-As the update is sequential, if at an intermediate point in time the accumulated likelihood is already greater than the previous best objective function result, then it will be impossible for it to be better than the previous result by the time it is finished computation. Thus, the function can end early and report no improvement.
-
 ### Likelihood Function Unrolling
 
 The functional form of the likelihood function is:
@@ -121,3 +87,37 @@ $$log(\prod\limits_{a = 1}^K \prod\limits_{b = 1}^{K+1} \lambda_{a,b}^{T_{a,b}})
 which shows that the objective function is actually just the product of the means corresponding to every placement in $A$, since $T_{a,b}$ is the number of total placements in $A$ that go from type $a$ to type $b$ departments.
 
 If we look at the original product of Poisson PMFs which forms the likelihood, that result is what occurs when one takes that PMF, removes the denominator (which was proven constant), removes the exponential term (also proven constant) and merges common $\lambda$ variables via the $A_{i,j}$ exponents, given that $T_{a,b}$ is the sum of placements in $A_{i,j}$ with common $t_i$ and $t_j$ types.
+
+### Early-Stopping: Search Thread Termination
+
+Given that the likelihood computation is now more efficient, it has become viable to conduct a thorough validation of the existence of further likelihood improvements after a certain period of search time.
+
+After sufficiently many periods of no improvements (which increases in the number of types), it is often a good guess that the algorithm is either close to or exactly unable to make any further optimizations.
+
+The early-stopping procedure, to implement this guess, attempts to reallocate, in sequence, every department to every possible tier. This is the full set of possible reallocations given the current allocation.
+
+If none of these reallocations produce a likelihood improvement, then we know with certainty that no further improvements are possible, so we can stop searching without having to wait for 30,000 reallocations as before.
+
+### Candidate Cache
+
+Originally, this line of code was in use: `@inbounds new_tier = rand(delete!(Set(1:num), old_tier))`.
+
+This line was used to, given the original tier of a department, uniformly select a new tier to assign the department to. To do this, the line takes the set of all tiers, removes the original tier from the set, and then uniformly samples from the leftovers.
+
+This is extremely memory-intensive because this set is recomputed and reallocated for every step of the algorithm. Instead of doing that, we can **precompute** and **preallocate** those sets:
+
+`new_tier_lookup = [deleteat!(Vector(1:numtier), i) for i in 1:numtier]`
+
+Testing indicated that generating the sets with a vector is faster than doing so with a set.
+
+Now, instead of recomputing the selection set for each iteration, we can precompute them before running the algorithm using the above line of code, which generates a lookup table specifying all possible "new tiers" for a given "old tier". 
+
+For example, if the original tier was 1, and there are 4 tiers total, our lookup table for 1 will return [2, 3, 4] as candidates.
+
+If the original tier was 3, our lookup table will return [1, 2, 4] as candidates.
+
+Then to randomly sample during the algorithm, we simply index the table:
+
+`@inbounds new_tier = rand(new_tier_lookup[old_tier])`
+
+which saves enough memory and improves enough on speed to induce a 2.5x speedup in the 5 tier case.
