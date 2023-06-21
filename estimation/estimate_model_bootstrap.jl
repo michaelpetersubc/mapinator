@@ -85,8 +85,6 @@ function chisquare(p_vec, T, S, placements, years, start_n, start_m, n, m)
 end
 
 function main(; SEED=0)
-    # todo: should this metadata go into the bootstrap file?
-
     YEAR_INTERVAL = 2003:2021  # change this to select the years of data to include in the estimation
     NUMBER_OF_TYPES = 4        # change this to select the number of types to classify academic departments into
     NUMBER_OF_SINKS = 4        # this should not change unless you change the sink structure
