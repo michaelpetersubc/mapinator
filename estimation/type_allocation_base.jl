@@ -6,9 +6,9 @@ with optimizations by Jonah Heyl, Kieran Weaver and others
 
 module SBM
 
-using JSON, Random, Distributions, PrettyTables
+using JSON, Random, Distributions, PrettyTables, HTTP
 
-export doit, get_placements, bucket_extract, get_results, estimate_parameters, nice_table
+export doit, get_placements, bucket_extract, get_results, estimate_parameters, nice_table, api_to_adjacency
 
 function bucket_estimate(assign, A, T, count, numtier, numtotal)
     """
@@ -422,6 +422,158 @@ function nice_table(t_table, num, numsinks, sinks)
     #names = ["Tier 1","Tier 2","Tier 3","Tier 4","Other Academic","Government","Private Sector","Teaching Universities","Column Totals"]
     pretty_table(adjacency, header = headers, row_names=names)
     return pretty_table(adjacency, header = headers, row_names=names, backend=Val(:latex))
+end
+
+function idcheck(outcome)
+    """
+        Institution ID conversion helper function for sinks
+    """
+
+    if outcome["recruiter_type"] == 5
+        return outcome["to_institution_id"] + 5000000
+    elseif outcome["recruiter_type"] in [6, 7]
+        return outcome["to_institution_id"] + 6000000
+    elseif outcome["recruiter_type"] == 8
+        return outcome["to_institution_id"] + 8000000
+    end
+    return outcome["to_institution_id"]
+end
+
+function api_to_adjacency(YEAR_INTERVAL)
+    """
+        Extract the relevant placement outcomes from the mapinator API
+    """
+
+    # institution IDs
+    academic = Dict{}()
+    academic_to = Dict{}()
+
+    # placements
+    academic_builder = []
+    rough_sink_builder = []
+
+    placement_data = HTTP.get("https://support.econjobmarket.org/api/placement_data")
+    to_from = JSON.parse(String(placement_data.body))
+    for placement in to_from
+        if in(placement["year"], YEAR_INTERVAL)
+            academic[parse(Int, placement["from_institution_id"])] = placement["from_institution_name"]
+            academic_to[placement["to_institution_id"]] = placement["to_name"]
+            if placement["position_name"] == "Assistant Professor"
+                push!(academic_builder, placement)
+            else
+                push!(rough_sink_builder, placement)
+            end
+        end
+    end
+
+    tch_sink = Dict{}() # sink of teaching universities that do not graduate PhDs
+    for key in keys(academic_to)
+        if !(key in keys(academic))
+            tch_sink[key] = string(academic_to[key], " (teaching university)")
+        end
+    end
+
+    acd_sink = Dict{}()
+    gov_sink = Dict{}()
+    pri_sink = Dict{}()
+    sink_builder = []
+
+    for outcome in rough_sink_builder
+        if outcome["recruiter_type"] == 5
+            # government institution
+            gov_sink[outcome["to_institution_id"]+5000000] = string(outcome["to_name"], " (public sector)")
+            push!(sink_builder, outcome)
+        elseif outcome["recruiter_type"] in [6, 7]
+            # private sector: for and not for profit
+            pri_sink[outcome["to_institution_id"]+6000000] = string(outcome["to_name"], " (private sector)")
+            push!(sink_builder, outcome)
+        elseif outcome["recruiter_type"] == 8
+            # international organizations and think tanks
+            acd_sink[outcome["to_institution_id"]+8000000] = string(outcome["to_name"], " (international sink)")
+            push!(sink_builder, outcome)
+        end
+    end
+
+    # sort to ensure consistent ordering
+    academic_list = sort(collect(keys(academic)))
+    acd_sink_list = sort(collect(keys(acd_sink)))
+    gov_sink_list = sort(collect(keys(gov_sink)))
+    pri_sink_list = sort(collect(keys(pri_sink)))
+    tch_sink_list = sort(collect(keys(tch_sink)))
+    sinks = vcat(acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list)
+    institutions = vcat(academic_list, sinks)
+
+    institution_names = merge(academic, acd_sink, gov_sink, pri_sink, tch_sink)
+
+    out = zeros(Int32, length(institutions), length(academic_list))
+    for outcome in academic_builder
+        out[findfirst(isequal(outcome["to_institution_id"]), institutions), findfirst(isequal(parse(Int, outcome["from_institution_id"])), institutions)] += 1
+    end
+    for outcome in sink_builder
+        out[findfirst(isequal(idcheck(outcome)), institutions), findfirst(isequal(parse(Int, outcome["from_institution_id"])), institutions)] += 1
+    end
+
+    academic_tiers = HTTP.get("https://support.econjobmarket.org/api/academic_tiers")
+    tier_data = JSON.parse(String(academic_tiers.body))
+    api_allocation = Dict{}()
+    for entry in tier_data
+        api_allocation[entry["institution_id"]] = entry["type"]
+    end
+
+    NUMBER_OF_TYPES = maximum(values(api_allocation)) + 1 # temporarily accomodate departments with no type allocation (fix TODO)
+    NUMBER_OF_SINKS = 4
+    numtotal = NUMBER_OF_TYPES + NUMBER_OF_SINKS
+
+    est_alloc = Vector{Int32}(undef, length(institutions))
+    cursor = 1
+    for institution_id in academic_list
+        if institution_id in keys(api_allocation)
+            est_alloc[cursor] = api_allocation[institution_id]
+        else
+            est_alloc[cursor] = NUMBER_OF_TYPES
+        end
+        cursor += 1
+    end
+    for _ in acd_sink_list # international organizations
+        est_alloc[cursor] = NUMBER_OF_TYPES + 1
+        cursor += 1
+    end
+    for _ in gov_sink_list # govt institutions
+        est_alloc[cursor] = NUMBER_OF_TYPES + 2
+        cursor += 1
+    end
+    for _ in pri_sink_list # private sector
+        est_alloc[cursor] = NUMBER_OF_TYPES + 3
+        cursor += 1
+    end
+    for _ in tch_sink_list # teaching institutions
+        est_alloc[cursor] = NUMBER_OF_TYPES + 4
+        cursor += 1
+    end
+
+    est_mat, est_count, full_likelihood = bucket_extract(est_alloc, out, NUMBER_OF_TYPES, numtotal)
+
+    #=
+    for sorted_type in 1:numtotal
+        counter = 0
+        println("TYPE $sorted_type:")
+        inst_hold = []
+        for (i, sbm_type) in enumerate(est_alloc)
+            if sorted_type == sbm_type
+                push!(inst_hold, institution_names[institutions[i]])
+                counter += 1
+            end
+        end
+        sort!(inst_hold)
+        for iname in inst_hold
+            println("  ", iname)
+        end
+        println("Total Institutions: $counter")
+        println()
+    end
+    =#
+
+    return est_mat ./ est_count # just the means
 end
 
 end
