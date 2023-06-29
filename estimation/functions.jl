@@ -114,7 +114,7 @@ end
             tiered_allocation[i] = type
         end
     end
-    return placement_rates, tiered_allocation
+    return placement_rates, tiered_allocation, o
 end
 
 
