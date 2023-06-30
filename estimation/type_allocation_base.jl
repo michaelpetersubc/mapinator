@@ -1,6 +1,6 @@
 """
 Accelerated SBM Sampler
-James Yuming Yu, 10 June 2023
+James Yuming Yu, 30 June 2023
 with optimizations by Jonah Heyl, Kieran Weaver and others
 """
 
@@ -8,7 +8,7 @@ module SBM
 
 using JSON, Random, Distributions, PrettyTables, HTTP
 
-export doit, get_placements, bucket_extract, get_results, estimate_parameters, nice_table, api_to_adjacency
+export doit, get_placements, bucket_extract, get_results, estimate_parameters, nice_table, api_to_adjacency, parse_placements
 
 function bucket_estimate(assign, A, T, count, numtier, numtotal)
     """
@@ -439,9 +439,18 @@ function idcheck(outcome)
     return outcome["to_institution_id"]
 end
 
-function api_to_adjacency(YEAR_INTERVAL)
+function fetch_api(endpoint)
     """
         Extract the relevant placement outcomes from the mapinator API
+    """
+
+    api_data = HTTP.get("https://support.econjobmarket.org/api/$(endpoint)")
+    return JSON.parse(String(api_data.body))
+end
+
+function api_to_adjacency(to_from, tier_data, YEAR_INTERVAL)
+    """
+        Use the to_from outcomes and tier_data allocation to construct the Poisson means matrix
     """
 
     # institution IDs
@@ -452,8 +461,6 @@ function api_to_adjacency(YEAR_INTERVAL)
     academic_builder = []
     rough_sink_builder = []
 
-    placement_data = HTTP.get("https://support.econjobmarket.org/api/placement_data")
-    to_from = JSON.parse(String(placement_data.body))
     for placement in to_from
         if in(placement["year"], YEAR_INTERVAL)
             academic[parse(Int, placement["from_institution_id"])] = placement["from_institution_name"]
@@ -513,8 +520,6 @@ function api_to_adjacency(YEAR_INTERVAL)
         out[findfirst(isequal(idcheck(outcome)), institutions), findfirst(isequal(parse(Int, outcome["from_institution_id"])), institutions)] += 1
     end
 
-    academic_tiers = HTTP.get("https://support.econjobmarket.org/api/academic_tiers")
-    tier_data = JSON.parse(String(academic_tiers.body))
     api_allocation = Dict{}()
     for entry in tier_data
         api_allocation[entry["institution_id"]] = entry["type"]
