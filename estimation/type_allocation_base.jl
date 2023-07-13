@@ -91,7 +91,7 @@ function doit(sample, T, count, num_academic, num_acd, num_gov, num_pri, num_tch
             @inbounds current_allocation[k] = old_tier
             # EARLY STOP: if no improvements are possible at all, stop the sampler
             blankcount += 1
-            if blankcount % blankcount_tol == 0
+            if (blankcount % blankcount_tol == 0)
                 found = false
                 for i in 1:num_academic, tier in 1:numtier
                     # conduct a single-department edit
@@ -239,7 +239,9 @@ function get_placements(YEAR_INTERVAL, DEBUG; bootstrap_samples = 0)
         end
     end
 
-    return out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions
+    # experimental testing suggests not all return values need to be unpacked when calling a function
+    # so requesting institution_mapping by the caller is optional
+    return out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions, institution_mapping
 end
 
 function bucket_extract(assign, A, numtier, numtotal)
@@ -311,7 +313,7 @@ function estimate_parameters(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED=0, DEBUG=fals
     NUMBER_OF_SINKS = 4        # this should not change unless you change the sink structure
     numtotal = NUMBER_OF_TYPES + NUMBER_OF_SINKS
 
-    out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions = get_placements(YEAR_INTERVAL, DEBUG)
+    out, academic_list, acd_sink_list, gov_sink_list, pri_sink_list, tch_sink_list, sinks, institutions, institution_mapping = get_placements(YEAR_INTERVAL, DEBUG)
     placement_rates = zeros(Int32, numtotal, NUMBER_OF_TYPES)
     counts = zeros(Int32, numtotal, NUMBER_OF_TYPES)
 
@@ -385,6 +387,8 @@ function estimate_parameters(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED=0, DEBUG=fals
         display(placement_rates ./ counts)
         println()
 
+        println("Likelihood: $full_likelihood")
+        println()
         println("Check Complete")
     end
 
@@ -395,7 +399,8 @@ function estimate_parameters(NUMBER_OF_TYPES, BLANKCOUNT_TOL; SEED=0, DEBUG=fals
         likelihood = full_likelihood, 
         allocation = sorted_allocation, 
         institutions,
-        num_institutions = length(institutions)
+        num_institutions = length(institutions),
+        institution_mapping
     )
 end
 
