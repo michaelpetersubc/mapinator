@@ -149,12 +149,12 @@ function get_placements(YEAR_INTERVAL, DEBUG; bootstrap_samples = 0)
             # ASSUMPTION: every applicant ID has only one placement
             for (_, placement) in to_from_by_year[year]
                 push!(academic, placement["from_institution_name"])
-                push!(academic_to, placement["to_name"])
                 oid_mapping[string(placement["from_oid"])] = string(placement["from_institution_id"])
                 oid_mapping[string(placement["to_oid"])] = string(placement["to_institution_id"])
                 institution_mapping[string(placement["from_institution_id"])] = placement["from_institution_name"]
                 institution_mapping[string(placement["to_institution_id"])] = placement["to_name"]
                 if placement["position_name"] == "Assistant Professor"
+                    push!(academic_to, placement["to_name"])
                     # TODO: why is asstprof in rectype Set(Any[5, 4, 7, 2, 10, 3, 1])
                     push!(academic_builder, placement)
                 else
@@ -469,8 +469,8 @@ function api_to_adjacency(to_from, tier_data, YEAR_INTERVAL)
     for placement in to_from
         if in(placement["year"], YEAR_INTERVAL)
             academic[parse(Int, placement["from_institution_id"])] = placement["from_institution_name"]
-            academic_to[placement["to_institution_id"]] = placement["to_name"]
             if placement["position_name"] == "Assistant Professor"
+                academic_to[placement["to_institution_id"]] = placement["to_name"]
                 push!(academic_builder, placement)
             else
                 push!(rough_sink_builder, placement)
