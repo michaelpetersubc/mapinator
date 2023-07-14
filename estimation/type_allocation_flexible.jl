@@ -8,7 +8,7 @@ include("type_allocation_base.jl")
 
 using DataStructures, HTTP, JSON, Random
 
-export doit, fetch_data, get_builders, get_adjacency, get_allocation, nice_table
+export doit, fetch_data, fetch_api, get_builders, get_adjacency, get_allocation, nice_table, bucket_extract
 
 function doit(sample, num_academic, sink_counters, numtier, numtotal, blankcount_tol)
     """
@@ -80,14 +80,20 @@ function doit(sample, num_academic, sink_counters, numtier, numtotal, blankcount
     end
 end
 
+function fetch_api(endpoint)
+    """Retrieve data from a URL endpoint."""
+    api_data = HTTP.get(endpoint) # e.g. "https://support.econjobmarket.org/api/placement_data"
+    res = JSON.parse(String(api_data.body))
+    if "error" in keys(res)
+        error(string(res["error"], ": ", res["error_description"]))
+    end
+    return res
+end
+
 function api_to_placements(endpoint)
     """Sort the placement data from an API endpoint by placement year."""
     to_from_by_year = DefaultDict(Dict)
-    api_data = HTTP.get(endpoint) # e.g. "https://support.econjobmarket.org/api/placement_data"
-    to_from = JSON.parse(String(api_data.body))
-    if "error" in keys(to_from)
-        error(string(to_from["error"], ": ", to_from["error_description"]))
-    end
+    to_from = fetch_api(endpoint)
     for placement in to_from
         to_from_by_year[string(placement["year"])][string(placement["aid"])] = placement
     end
@@ -117,6 +123,7 @@ function get_builders(to_from_by_year, YEAR_INTERVAL)
     """
 
     institution_mapping = Dict()
+    reverse_mapping = Dict()
     academic = Set()
     academic_to = Set()
     academic_builder = []
@@ -129,6 +136,9 @@ function get_builders(to_from_by_year, YEAR_INTERVAL)
                 push!(academic, placement["from_institution_name"])
                 institution_mapping[string(placement["from_institution_id"])] = placement["from_institution_name"]
                 institution_mapping[string(placement["to_institution_id"])] = placement["to_name"]
+                # some institutions may have more than one ID. one ID will be *arbitrarily* picked to represent it:
+                reverse_mapping[placement["from_institution_name"]] = string(placement["from_institution_id"])
+                reverse_mapping[placement["to_name"]] = string(placement["to_institution_id"])
                 if placement["position_name"] == "Assistant Professor"
                     push!(academic_to, placement["to_name"])
                     push!(academic_builder, placement)
@@ -138,7 +148,41 @@ function get_builders(to_from_by_year, YEAR_INTERVAL)
             end
         end
     end
-    return academic, academic_to, academic_builder, rough_sink_builder, institution_mapping
+    return academic, academic_to, academic_builder, rough_sink_builder, institution_mapping, reverse_mapping
+end
+
+function build_sinks(sinks_to_include, teaching_list; DEBUG = true)
+    """
+        Construct the sink departments based on the sink placements.
+    """
+    
+    sink_builder = []
+    sinks = []
+    sink_labels = []
+    if DEBUG 
+        println("Including the following sinks:") 
+    end
+    for (sink_name, sink_placements) in sinks_to_include
+        if DEBUG 
+            println(" ", sink_name) 
+        end
+        # generate list of department names
+        dept_names = Set()
+        for (outcome_to_name, outcome) in sink_placements
+            push!(dept_names, outcome_to_name)
+            push!(sink_builder, (outcome_to_name, outcome))
+        end
+        push!(sinks, sort(collect(dept_names)))
+        push!(sink_labels, sink_name)
+    end
+
+    push!(sinks, teaching_list) # teaching_list must always be included
+    push!(sink_labels, "Teaching Universities")
+    if DEBUG 
+        println(" Teaching Universities")
+        println("Total $(length(sink_labels)) sinks")
+    end
+    return sink_builder, sinks, sink_labels
 end
 
 function get_adjacency(academic_list, institutions, academic_builder, sink_builder; DEBUG = true, bootstrap_samples = 0)
@@ -198,10 +242,15 @@ function get_allocation(est_alloc, out, NUMBER_OF_TYPES, numtotal, institutions)
     return placement_rates, counts, sorted_allocation, full_likelihood
 end
 
-function nice_table(table, numtier, numsink, sink_labels)
+function bucket_extract(assign, A, numtier, numtotal)
+    """Passthrough of SBM.bucket_extract()."""
+    return SBM.bucket_extract(assign, A, numtier, numtotal)
+end
+
+function nice_table(table, numtier, numsink, sink_labels; has_unassigned = false)
     """Passthrough of SBM.nice_table()."""
     push!(sink_labels, "Column Totals")
-    return SBM.nice_table(table, numtier, numsink, sink_labels)
+    return SBM.nice_table(table, numtier, numsink, sink_labels; has_unassigned = has_unassigned)
 end
 
 end

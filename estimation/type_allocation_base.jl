@@ -156,6 +156,7 @@ function get_placements(YEAR_INTERVAL, DEBUG; bootstrap_samples = 0)
                 if placement["position_name"] == "Assistant Professor"
                     push!(academic_to, placement["to_name"])
                     # TODO: why is asstprof in rectype Set(Any[5, 4, 7, 2, 10, 3, 1])
+                    # FUTURE: if filtering by field, add "&& placement["recruiter_type"] in [1, 2, etc]"
                     push!(academic_builder, placement)
                 else
                     push!(rough_sink_builder, placement)
@@ -407,7 +408,7 @@ end
 ## print a nice version of the adjacency matrix with tiers and return the latex
 ## function by Mike Peters from https://github.com/michaelpetersubc/mapinator/blob/355ad808bddcb392388561d25a63796c81ff04c0/estimation/functions.jl
 ## TODO: port the API functionality from the same file
-function nice_table(t_table, num, numsinks, sinks)
+function nice_table(t_table, num, numsinks, sinks; has_unassigned = false)
     column_sums = sum(t_table, dims=1)
     row_sums = sum(t_table, dims=2)
     row_sums_augmented = vcat(row_sums, sum(row_sums))
@@ -415,10 +416,20 @@ function nice_table(t_table, num, numsinks, sinks)
     adjacency = hcat(part, row_sums_augmented)
     headers = []
     names = []
-    for i=1:num
+    
+    for i=1:num-1
         push!(headers, "Tier $i")
         push!(names, "Tier $i")
     end
+    
+    if has_unassigned == false # regular case
+        push!(headers, "Tier $num")
+        push!(names, "Tier $num")
+    else # need to use an "Unassigned" tier
+        push!(headers, "Missing")
+        push!(names, "Missing")
+    end 
+    
     #println(headers)
 
     push!(headers, "Row Totals")
