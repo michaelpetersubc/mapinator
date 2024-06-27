@@ -132,6 +132,7 @@ end
 function get_placements(YEAR_INTERVAL, DEBUG; bootstrap_samples = 0)
     """
         Extract the relevant placement outcomes from `to_from_by_year.json`
+        this looks like it is obsolete
     """
 
     oid_mapping = Dict{}()
@@ -267,6 +268,40 @@ function bucket_extract(assign, A, numtier, numtotal)
     return T, count, L
 end
 
+function sort_by_diag(p)
+    """
+        Helper function for sorting an unsorted placement matrix
+        finds the biggest diagonal element of a (non-diagonal) matrix
+        returns the index of the biggest element, and a copy of the matrix with the
+        column that corresponds with that index reset to 0
+    """
+    num_types = size(p)[2]
+    p_normalized = p./sum(p, dims=2)
+    max_diag = 1
+    for k in 1:num_types
+        if p_normalized[k,k] > p_normalized[max_diag, max_diag]
+            max_diag = k
+        end
+    end
+    p_normalized[:,max_diag] .= 0
+    return max_diag, p_normalized
+end
+
+function tier(type_map,j)
+    """
+        finds the sorted type of the est_alloc type
+        i.e. if the algorithm put harvard into block 4 (with all the other tier 1 schools)
+        then this function return the tier calculated by the sort_diag method
+    """
+    for i in 1:length(type_map)
+        if type_map[i] == j
+            return i
+        end
+    end
+end
+
+    
+
 function get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
     """
         Compiles sorted SBM results
@@ -277,24 +312,48 @@ function get_results(placement_rates, counts, est_mat, est_count, est_alloc, ins
     @inbounds counts .= 0
 
     # mapping o[i]: takes an unsorted SBM-marked type i and outputs the corresponding true, sorted type
-    o = zeros(Int32, numtotal)
-    o[vcat(sortperm(vec(sum(est_mat, dims = 1)), rev=true), NUMBER_OF_TYPES+1:numtotal)] = 1:numtotal
+    #### rewrite this  block
+    ##o = zeros(Int32, numtotal)
+    ##o[vcat(sortperm(vec(sum(est_mat, dims = 1)), rev=true), NUMBER_OF_TYPES+1:numtotal)] = 1:numtotal
 
     # shuffle the cells for the tier to tier placements
-    for i in 1:numtotal
-        @simd for j in 1:NUMBER_OF_TYPES
-            placement_rates[o[i], o[j]] = est_mat[i, j]
-            counts[o[i], o[j]] = est_count[i, j]
+    ##for i in 1:numtotal
+    ##    @simd for j in 1:NUMBER_OF_TYPES
+    ##        placement_rates[o[i], o[j]] = est_mat[i, j]
+    ##        counts[o[i], o[j]] = est_count[i, j]
+    ##    end
+    ##end
+    ###### end of rewrite
+    ###### start rewrite
+    #println("debug type_allocation base line 327 ", est_mat)
+    o = zeros(Int32, size(est_mat)[1])
+    p = zeros(Int32, size(est_mat)[1], size(est_mat)[2])
+    for i in 1:size(est_mat)[1]
+        for j in 1:size(est_mat)[2]
+            p[i,j] = est_mat[i,j]
         end
     end
-
+    #println("\ndebug type_allocation base line 335 ", p)
+    for k in 1:size(p)[2]
+        max_diag, p = sort_by_diag(p);
+        o[k] = max_diag
+    end
+    for k in size(est_mat)[2]+1:size(est_mat)[1]
+        o[k] = k
+    end
+    for i in 1:size(est_mat)[1]
+        for j in 1:size(est_mat)[2]
+            #println(i, " ", j)
+            placement_rates[i, j] = est_mat[o[i], o[j]]
+        end
+    end
+    ###### end rewrite
     # shuffle the allocation
     sorted_allocation = Vector{Int32}(undef, length(institutions))
     for i in 1:length(institutions)
-        sorted_allocation[i] = o[est_alloc[i]]
+        sorted_allocation[i] = tier(o, est_alloc[i])
     end
-
-    return sorted_allocation, o
+    return sorted_allocation, o, placement_rates
 end
 
 #=

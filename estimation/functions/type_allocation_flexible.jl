@@ -51,12 +51,12 @@ function nice_adjacency_table(t_table, names, path = "")
             f,
             adjacency,
             header = headers,
-            row_names = cnames,
+            row_labels = cnames,
             backend = Val(:latex)
             )
         end
     else
-        pretty_table(adjacency, header = headers, row_names=cnames)
+        pretty_table(adjacency; header = headers, row_labels=cnames)
     end
     #names = ["Tier 1","Tier 2","Tier 3","Tier 4","Other Academic","Government","Private Sector","Teaching Universities","Column Totals"]
     #pretty_table(adjacency, header = headers, row_names=names)
@@ -292,7 +292,8 @@ function get_allocation(est_alloc, out, NUMBER_OF_TYPES, numtotal, institutions)
     placement_rates = zeros(Int32, numtotal, NUMBER_OF_TYPES)
     counts = zeros(Int32, numtotal, NUMBER_OF_TYPES)
     est_mat, est_count, full_likelihood = SBM.bucket_extract(est_alloc, out, NUMBER_OF_TYPES, numtotal)
-    sorted_allocation, o = SBM.get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+    println("debug bas line 295 \n",est_mat, "\n",est_count)
+    sorted_allocation, o, placement_rates = SBM.get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
     return placement_rates, counts, sorted_allocation, full_likelihood
 end
 
