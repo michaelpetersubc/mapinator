@@ -14,7 +14,7 @@ export doit, fetch_data, fetch_api, get_builders, get_adjacency, get_allocation,
 #this function relies on a global database connection d
 function db_query(query, params)
     # generic query function    
-    cfg = DotEnv.config(path="../.env")
+    cfg = DotEnv.config("../.env")
     d = DBInterface.connect(MySQL.Connection,cfg["host"], cfg["user"], cfg["password"], db =cfg["database"], port = parse(Int64,cfg["port"]));
     #query = "select "*join(fieldnames,",")*" from "*table_name*" "*w
     get_statement =  DBInterface.prepare(d, query);
