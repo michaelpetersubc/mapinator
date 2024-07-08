@@ -1,4 +1,6 @@
 .*
 !/.gitignore
 .ipynb_checkpoints
+estimation/current_estimates_and_files/filtered_data.jld
+estimation/current_estimates_and_files/to_from_by_year.json
 
