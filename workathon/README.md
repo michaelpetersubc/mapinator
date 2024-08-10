@@ -75,7 +75,6 @@ Sometimes, it is hard to find new candidates to fill information for.
 * Go to `https://support.econjobmarket.org/tracker` and type in the name of an institution and the year (which indicates when an applicant registered with econjobmarket).
   * Often times, candidates from 10+ years ago were missed. Check those years.
 * Lower tier institutions are often missed. (insert link to list of institutions) and `ctrl + f` and type 4 or 5 to find lower tier institutions to type into the tracker page. 
-* 8:08 PM 2024-07-25
 
 ### Common Problems and Q&A
 
