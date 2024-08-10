@@ -75,12 +75,12 @@ Sometimes, it is hard to find new candidates to fill information for.
 * Go to `https://support.econjobmarket.org/tracker` and type in the name of an institution and the year (which indicates when an applicant registered with econjobmarket).
   * Often times, candidates from 10+ years ago were missed. Check those years.
 * Lower tier institutions are often missed. (insert link to list of institutions) and `ctrl + f` and type 4 or 5 to find lower tier institutions to type into the tracker page. 
+* Of course, you can always use the VSE data entry tool.
 
 ### Common Problems and Q&A
 
 * In which cases should we enter the applicant's position? 
-  * If the position started in and after 2008 and after their PhD graduation, and is not a position at a scientific journal. You should enter all such outcomes for each applicant.
-2:29 PM 2024-07-27 
+  * If the position started in and after 2008 and after their PhD graduation, and is not a position at a scientific journal. You should enter all such outcomes for each applicant. Please note that it is preferred if you do not enter information for candidates that have just graduated the present year. 
 * The position type of the applicant is not in the list of positions!
   * In this case, you should select either “Other Academic” (if the position is in a university) or “Other Non-Academic” (if the position is in any other institution type). For example: 
   ![](images/choosedepartment.png)
