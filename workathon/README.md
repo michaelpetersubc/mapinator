@@ -55,7 +55,7 @@ Now that the candidate pages have launched in your browser, you are ready to beg
 8. The outcome should now be added! You should be redirected to the applicant’s main page. Something like this: 
 ![](images/createdentry.png)
 9. Add any other outcomes for the applicant. For example, if the applicant was also a Postdoctoral Researcher at Harvard University, and an Economist at the European Central Bank, both of them will also need to be added. Please add **all post-PhD outcomes** for an applicant (even if they don’t seem to be in the field of economics!), **except** if they are positions within a scientific journal. 
-10. Please note that position changes within an institution should be recorded as separate outcomes.  
+10. Please note that position changes within an institution should be recorded as separate outcomes.
 
 
 ### Deleting outcomes
