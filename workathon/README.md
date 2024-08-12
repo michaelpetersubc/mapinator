@@ -2,7 +2,7 @@ Tali Yaffe and Jonathan Chan
 July 26, 2022
 
 Updated by Alice Zhao
-August 2024
+August 12, 2024
 
 # EconJobMarket Data Entry Guide
 
@@ -46,7 +46,6 @@ Now that the candidate pages have launched in your browser, you are ready to beg
 1. Look through the web search tab and try to find information relating to the candidate. Some examples of common resources include applicants’ personal websites, LinkedIn profiles, academic CVs, or profiles of applicants posted on organisational websites. When using resources, it is crucial to **verify** the applicant’s identity, to ensure that both the graduation year (if available) and degree-granting institution match up with the data recorded in EJM. This is because applicants often have the same names, including both first and last. It is better to not record data than to record incorrect outcomes.
 2. Once you have found an outcome and verified that the data belongs to the applicant, record it in EJM. Click on the “Add an outcome” button. 
 ![](images/addoutcome_1.png) 
-**Note:** For the purposes of this example, the applicant currently works at Harvard University as an Assistant Professor.
 3. Once you click on the “Add an outcome” button, you should arrive at a prompt for you to type in the university which hired the applicant. Start typing in the university name, and the correct institution should appear. Example: 
 ![](images/addoutcome_2.png)
 4. Click on the correct institution, and then “Continue.”
@@ -76,14 +75,19 @@ Now that the candidate pages have launched in your browser, you are ready to beg
 Sometimes, it is hard to find new candidates to fill information for.
 
 * Go to `https://support.econjobmarket.org/tracker` and type in the name of an institution and the year (which indicates when an applicant registered with econjobmarket).
-  * Often times, candidates from 10+ years ago were missed. Check those years.
-* Lower tier institutions are often missed. (insert link to list of institutions) and `ctrl + f` and type 4 or 5 to find lower tier institutions to type into the tracker page. 
-* Of course, you can always use the VSE data entry tool.
+  * Often times, candidates from 10+ years ago were missed. Check those years using the dropdown on the page.
+* Lower tier institutions are often missed. Here are a few ways to enter candidates from tiers 4 and 5: 
+  * Go to `https://support.econjobmarket.org/` and on the right hand side, you should find links to "find tier 4" and "find tier 5". You can use these buttons to enter outcomes of candidates from lower tiers. 
+  ![](images/lower_tiers.png)
+  * Go to `https://support.econjobmarket.org/api/academic_tiers` and find (ctrl+f for Windows, cmd+f for Mac) `\"tier\":4` or `\"tier\":5` to find a tier 4 or 5 institution. From there, go to `https://support.econjobmarket.org/tracker` and type in the institution name to find candidates. 
+* Find a Kim gives you a random incomplete entry. 
+![](images/find_kim.png)
+* You can also use the VSE data entry tool.
 
 ### Common Problems and Q&A
 
 * In which cases should we enter the applicant's position? 
-  * If the position started in and after 2008 and after their PhD graduation, and is not a position at a scientific journal. You should enter all such outcomes for each applicant. Please note that it is preferred if you do not enter information for candidates that have just graduated the present year. 
+  * If the position started in and after 2008 and after their PhD graduation, and before the, and is not a position at a scientific journal. You should enter all such outcomes for each applicant. Please note that it is preferred if you do not enter information for candidates that have just graduated the present year. 
 * The position type of the applicant is not in the list of positions!
   * In this case, you should select either “Other Academic” (if the position is in a university) or “Other Non-Academic” (if the position is in any other institution type). For example: 
   ![](images/choosedepartment.png)
