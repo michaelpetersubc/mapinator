@@ -1,6 +1,9 @@
 Tali Yaffe and Jonathan Chan   
 July 26, 2022
 
+Updated by Alice Zhao
+August 2024
+
 # EconJobMarket Data Entry Guide
 
 Welcome! If you are reading this guide, thank you for your interest in helping to work on EconJobMarket (referred to as EJM below), a database to match PhD graduates with employment opportunities. Over the years, tens of thousands of PhD candidates and graduates from all around the world have used EJM; which means that, as a side effect, EJM has also collected data that can be used for research. The research team at UBC, specifically, is investigating the relationship between the PhD-conferring institution and the institution that hires these PhD graduates (called applicants or candidates). 
