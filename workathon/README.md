@@ -1,7 +1,7 @@
 Tali Yaffe and Jonathan Chan   
 July 26, 2022
 
-Updated by Alice Zhao 
+Updated by Alice Zhao           
 August 12, 2024
 
 # EconJobMarket Data Entry Guide
