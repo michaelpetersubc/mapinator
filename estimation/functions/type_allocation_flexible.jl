@@ -193,7 +193,7 @@ function get_builders(to_from_by_year)
                 # some institutions may have more than one ID. one ID will be *arbitrarily* picked to represent it:
                 reverse_mapping[placement["from_institution_name"]] = string(placement["from_institution_id"])
                 reverse_mapping[placement["to_name"]] = string(placement["to_institution_id"])
-                if placement["position_name"] == "Assistant Professor"
+                if placement["position_name"] == "Assistant Professor" && placement["recruiter_type"] < 5
                     push!(academic_to, placement["to_name"])
                     push!(academic_builder, placement)
                 else
@@ -289,11 +289,13 @@ function get_allocation(est_alloc, out, NUMBER_OF_TYPES, numtotal, institutions)
         Compile the results of an SBM allocation.
     """
 
-    placement_rates = zeros(Int32, numtotal, NUMBER_OF_TYPES)
-    counts = zeros(Int32, numtotal, NUMBER_OF_TYPES)
+    #placement_rates = zeros(Int32, numtotal, NUMBER_OF_TYPES)
+    #counts = zeros(Int32, numtotal, NUMBER_OF_TYPES)
     est_mat, est_count, full_likelihood = SBM.bucket_extract(est_alloc, out, NUMBER_OF_TYPES, numtotal)
     println("debug bas line 295 \n",est_mat, "\n",est_count)
-    sorted_allocation, o, placement_rates = SBM.get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+    sorted_allocation, o, placement_rates, counts = SBM.get_results(est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+    #SBM.get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+    
     return placement_rates, counts, sorted_allocation, full_likelihood
 end
 

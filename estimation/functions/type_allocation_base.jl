@@ -8,7 +8,8 @@ module SBM
 
 using JSON, Random, Distributions, PrettyTables, HTTP
 
-export doit, get_placements, bucket_extract, get_results, estimate_parameters, nice_table, api_to_adjacency, parse_placements
+export doit, get_placements, bucket_extract, get_results, estimate_parameters, 
+    nice_table, api_to_adjacency, parse_placements, tier
 
 function bucket_estimate(assign, A, T, count, numtier, numtotal)
     """
@@ -277,10 +278,19 @@ function sort_by_diag(p)
     """
     num_types = size(p)[2]
     p_normalized = p./sum(p, dims=2)
+    # println(repr("text/plain", p_normalized))
     max_diag = 1
     for k in 1:num_types
-        if p_normalized[k,k] > p_normalized[max_diag, max_diag]
-            max_diag = k
+        if isnan(p_normalized[k,k])
+            continue
+        else 
+            if isnan(p_normalized[max_diag, max_diag])
+                max_diag = k
+            else 
+                if isless(p_normalized[max_diag, max_diag],p_normalized[k,k])  
+                    max_diag = k
+                end
+            end
         end
     end
     p_normalized[:,max_diag] .= 0
@@ -302,14 +312,16 @@ end
 
     
 
-function get_results(placement_rates, counts, est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
+function get_results(est_mat, est_count, est_alloc, institutions, NUMBER_OF_TYPES, numtotal)
     """
         Compiles sorted SBM results
     """
 
     # TODO: make this function return the placement rates on its own
-    @inbounds placement_rates .= 0
-    @inbounds counts .= 0
+    #@inbounds placement_rates .= 0
+    #@inbounds counts .= 0
+    placement_rates = zeros(Int32, numtotal, NUMBER_OF_TYPES)
+    counts = zeros(Int32, numtotal, NUMBER_OF_TYPES)
 
     # mapping o[i]: takes an unsorted SBM-marked type i and outputs the corresponding true, sorted type
     #### rewrite this  block
@@ -328,6 +340,7 @@ function get_results(placement_rates, counts, est_mat, est_count, est_alloc, ins
     #println("debug type_allocation base line 327 ", est_mat)
     o = zeros(Int32, size(est_mat)[1])
     p = zeros(Int32, size(est_mat)[1], size(est_mat)[2])
+    #println(repr("text/plain", est_mat))
     for i in 1:size(est_mat)[1]
         for j in 1:size(est_mat)[2]
             p[i,j] = est_mat[i,j]
@@ -347,13 +360,15 @@ function get_results(placement_rates, counts, est_mat, est_count, est_alloc, ins
             placement_rates[i, j] = est_mat[o[i], o[j]]
         end
     end
+    #println(o)
+    #return "debug"
     ###### end rewrite
     # shuffle the allocation
     sorted_allocation = Vector{Int32}(undef, length(institutions))
-    for i in 1:length(institutions)
-        sorted_allocation[i] = tier(o, est_alloc[i])
-    end
-    return sorted_allocation, o, placement_rates
+    #println("degug: " ,length(institutions),"\n")
+    p#rintln(o)
+    
+    return sorted_allocation, o, placement_rates,counts
 end
 
 #=
